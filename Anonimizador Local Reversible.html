@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Anonimizador local de documentos</title>
+<style>
+:root{
+  --bg:#f3f2ec; --bg2:#eceae0; --panel:#ffffff; --panel2:#faf9f4;
+  --text:#1f2421; --muted:#6b6f69; --border:#e2e0d6; --border2:#d3d1c4;
+  --accent:#14532d; --accent-soft:#e6efe8; --accent-text:#14532d;
+  --shadow:0 1px 2px rgba(20,30,25,.05),0 8px 24px -12px rgba(20,30,25,.18);
+  --radius:14px; --radius-s:9px;
+  --c-persona:#2563eb; --c-org:#7c3aed; --c-cifra:#b45309;
+  --c-lugar:#0d9488; --c-fecha:#be123c; --c-contacto:#0e7490;
+  --c-url:#475569; --c-custom:#a16207; --ok:#15803d;
+}
+[data-theme="dark"]{
+  --bg:#14171a; --bg2:#1a1e22; --panel:#1e2227; --panel2:#23282e;
+  --text:#e7e9e4; --muted:#9aa09a; --border:#2c3138; --border2:#373d45;
+  --accent:#4ade80; --accent-soft:#1c2a22; --accent-text:#7ee2a8;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -14px rgba(0,0,0,.6);
+  --c-persona:#7aa7f5; --c-org:#b794f6; --c-cifra:#e0a458;
+  --c-lugar:#4fd1c5; --c-fecha:#f87f96; --c-contacto:#4cc3da;
+  --c-url:#a0aab6; --c-custom:#e6c252; --ok:#5dd28a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--text);
+  font-size:15px; line-height:1.55;
+  transition:background .25s ease,color .25s ease;
+}
+button,input,textarea{font-family:inherit;font-size:inherit;color:inherit}
+.app{max-width:1320px;margin:0 auto;padding:18px clamp(12px,3vw,28px) 40px}
+
+/* Header */
+header{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:14px 0 18px;
+}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.logo{
+  width:42px;height:42px;border-radius:11px;flex:none;
+  background:var(--accent);color:#fff;
+  display:grid;place-items:center;
+}
+[data-theme="dark"] .logo{color:#0c1410}
+.logo svg{width:23px;height:23px}
+.brand h1{font-size:1.12rem;font-weight:650;letter-spacing:-.01em;line-height:1.2}
+.brand p{font-size:.78rem;color:var(--muted)}
+.badge{
+  display:flex;align-items:center;gap:8px;
+  background:var(--accent-soft);color:var(--accent-text);
+  border:1px solid color-mix(in srgb,var(--accent) 32%,transparent);
+  padding:7px 13px;border-radius:999px;font-size:.78rem;font-weight:600;
+  white-space:nowrap;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 70%,transparent);
+  animation:pulse 2.4s infinite}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent)}
+  70%{box-shadow:0 0 0 9px color-mix(in srgb,var(--ok) 0%,transparent)}
+  100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 0%,transparent)}
+}
+.theme-btn{
+  width:42px;height:42px;border-radius:11px;flex:none;cursor:pointer;
+  background:var(--panel);border:1px solid var(--border);
+  display:grid;place-items:center;transition:all .2s ease;
+}
+.theme-btn:hover{border-color:var(--border2);transform:translateY(-1px)}
+.theme-btn svg{width:20px;height:20px}
+
+/* Layout */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px}
+.card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+}
+.card-h{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+}
+.card-h h2{font-size:.92rem;font-weight:650;letter-spacing:-.005em}
+.card-h .sub{font-size:.76rem;color:var(--muted);margin-left:auto}
+.card-b{padding:16px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;padding:6px;background:var(--bg2);
+  border-radius:var(--radius-s);margin-bottom:14px}
+.tab{
+  flex:1;padding:8px 10px;border:none;background:transparent;cursor:pointer;
+  border-radius:7px;font-size:.85rem;font-weight:550;color:var(--muted);
+  transition:all .18s ease;
+}
+.tab.active{background:var(--panel);color:var(--text);
+  box-shadow:0 1px 3px rgba(0,0,0,.08)}
+[data-theme="dark"] .tab.active{box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.pane{display:none}
+.pane.active{display:block}
+
+textarea#input{
+  width:100%;min-height:240px;resize:vertical;
+  padding:13px;border:1px solid var(--border);border-radius:var(--radius-s);
+  background:var(--panel2);line-height:1.6;
+}
+textarea#input:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+
+/* Dropzone */
+.drop{
+  border:2px dashed var(--border2);border-radius:var(--radius-s);
+  padding:34px 18px;text-align:center;cursor:pointer;
+  background:var(--panel2);transition:all .18s ease;
+}
+.drop:hover,.drop.over{border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 7%,var(--panel2))}
+.drop svg{width:34px;height:34px;color:var(--muted);margin-bottom:8px}
+.drop .big{font-weight:600;font-size:.94rem}
+.drop .small{font-size:.79rem;color:var(--muted);margin-top:3px}
+.filechip{
+  display:none;align-items:center;gap:9px;margin-top:12px;
+  padding:9px 12px;background:var(--accent-soft);
+  border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  border-radius:var(--radius-s);font-size:.83rem;
+}
+.filechip.show{display:flex}
+.filechip svg{width:17px;height:17px;color:var(--accent-text);flex:none}
+.filechip .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filechip button{margin-left:auto;background:none;border:none;cursor:pointer;
+  color:var(--muted);font-size:1.1rem;line-height:1;padding:0 2px}
+
+/* Config */
+.section-t{font-size:.74rem;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted);margin:2px 0 10px}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.rule{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;
+  border:1px solid var(--border);border-radius:var(--radius-s);
+  background:var(--panel2);cursor:pointer;transition:border-color .15s ease;
+}
+.rule:hover{border-color:var(--border2)}
+.rule .tagdot{width:9px;height:9px;border-radius:3px;flex:none}
+.rule .rl-name{font-size:.83rem;font-weight:550}
+.rule .rl-desc{font-size:.71rem;color:var(--muted);display:block;font-weight:400}
+.switch{margin-left:auto;flex:none;position:relative;width:36px;height:21px}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0}
+.track{position:absolute;inset:0;background:var(--border2);border-radius:999px;
+  transition:background .18s ease}
+.thumb{position:absolute;top:3px;left:3px;width:15px;height:15px;border-radius:50%;
+  background:#fff;transition:transform .18s ease;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.switch input:checked~.track{background:var(--accent)}
+.switch input:checked~.thumb{transform:translateX(15px)}
+
+.custom-wrap{margin-top:16px}
+textarea#custom{
+  width:100%;min-height:62px;resize:vertical;padding:10px 12px;
+  border:1px solid var(--border);border-radius:var(--radius-s);
+  background:var(--panel2);line-height:1.5;font-size:.86rem;
+}
+textarea#custom:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.hint{font-size:.74rem;color:var(--muted);margin-top:6px}
+textarea.ta{
+  width:100%;min-height:90px;resize:vertical;padding:10px 12px;margin-top:6px;
+  border:1px solid var(--border);border-radius:var(--radius-s);
+  background:var(--panel2);line-height:1.55;font-size:.86rem;
+}
+textarea.ta:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+textarea#mapBox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;background:var(--bg2)}
+.revtog{display:inline-flex;align-items:center;gap:6px;margin-left:auto;
+  font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;user-select:none}
+.revtog input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
+.revtog.on{color:var(--accent-text)}
+.mapwrap{padding:14px 16px;border-top:1px solid var(--border)}
+
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.btn{
+  padding:9px 15px;border-radius:var(--radius-s);cursor:pointer;
+  font-size:.85rem;font-weight:600;border:1px solid var(--border2);
+  background:var(--panel);transition:all .15s ease;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.btn:hover:not(:disabled){transform:translateY(-1px);border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:15px;height:15px}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+[data-theme="dark"] .btn.primary{color:#0c1410}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
+
+/* Output */
+.counter{
+  margin-left:auto;display:flex;align-items:baseline;gap:6px;
+}
+.counter .num{font-size:1.35rem;font-weight:750;color:var(--accent-text);
+  letter-spacing:-.02em}
+.counter .lbl{font-size:.76rem;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:7px;padding:12px 16px;
+  border-bottom:1px solid var(--border)}
+.lg{display:flex;align-items:center;gap:6px;font-size:.74rem;
+  padding:3px 8px;border-radius:6px;background:var(--bg2)}
+.lg .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.lg .ct{font-weight:700;font-variant-numeric:tabular-nums}
+.lg.off{opacity:.38}
+.output{
+  padding:16px;min-height:300px;white-space:pre-wrap;word-break:break-word;
+  line-height:1.7;font-size:.92rem;max-height:62vh;overflow:auto;
+}
+.empty{color:var(--muted);text-align:center;padding:60px 20px;font-size:.9rem}
+.empty svg{width:42px;height:42px;opacity:.4;margin-bottom:10px}
+.tg{
+  padding:1px 5px;border-radius:5px;font-weight:650;font-size:.86em;
+  white-space:nowrap;letter-spacing:.01em;
+}
+.tg-persona{color:var(--c-persona);background:color-mix(in srgb,var(--c-persona) 15%,transparent);border:1px solid color-mix(in srgb,var(--c-persona) 38%,transparent)}
+.tg-org{color:var(--c-org);background:color-mix(in srgb,var(--c-org) 15%,transparent);border:1px solid color-mix(in srgb,var(--c-org) 38%,transparent)}
+.tg-cifra{color:var(--c-cifra);background:color-mix(in srgb,var(--c-cifra) 16%,transparent);border:1px solid color-mix(in srgb,var(--c-cifra) 40%,transparent)}
+.tg-lugar{color:var(--c-lugar);background:color-mix(in srgb,var(--c-lugar) 15%,transparent);border:1px solid color-mix(in srgb,var(--c-lugar) 38%,transparent)}
+.tg-fecha{color:var(--c-fecha);background:color-mix(in srgb,var(--c-fecha) 15%,transparent);border:1px solid color-mix(in srgb,var(--c-fecha) 38%,transparent)}
+.tg-contacto{color:var(--c-contacto);background:color-mix(in srgb,var(--c-contacto) 15%,transparent);border:1px solid color-mix(in srgb,var(--c-contacto) 38%,transparent)}
+.tg-url{color:var(--c-url);background:color-mix(in srgb,var(--c-url) 16%,transparent);border:1px solid color-mix(in srgb,var(--c-url) 40%,transparent)}
+.tg-custom{color:var(--c-custom);background:color-mix(in srgb,var(--c-custom) 18%,transparent);border:1px solid color-mix(in srgb,var(--c-custom) 42%,transparent)}
+
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--text);color:var(--bg);padding:10px 18px;border-radius:9px;
+  font-size:.85rem;font-weight:550;opacity:0;pointer-events:none;
+  transition:all .25s ease;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.err{color:var(--c-fecha);font-size:.82rem;margin-top:8px;font-weight:550;display:none}
+.err.show{display:block}
+
+footer{margin-top:24px;font-size:.75rem;color:var(--muted);line-height:1.6;
+  border-top:1px solid var(--border);padding-top:14px}
+
+@media(max-width:880px){
+  .grid{grid-template-columns:1fr}
+  .rules{grid-template-columns:1fr}
+  .brand h1{font-size:1rem}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Anonimizador local de documentos</h1>
+        <p>Detección y sustitución de datos sensibles en el navegador</p>
+      </div>
+    </div>
+    <div class="badge" title="Ningún dato sale de este equipo">
+      <span class="dot"></span>100% local · sin conexión
+    </div>
+    <button class="theme-btn" id="themeBtn" title="Cambiar tema" aria-label="Cambiar tema">
+      <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+      </svg>
+      <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+      </svg>
+    </button>
+  </header>
+
+  <div class="grid">
+
+    <!-- ============ COLUMNA ENTRADA ============ -->
+    <div class="col">
+      <div class="card">
+        <div class="card-h"><h2>Entrada</h2><span class="sub">texto o archivo</span></div>
+        <div class="card-b">
+          <div class="tabs">
+            <button class="tab active" data-pane="paste">Pegar texto</button>
+            <button class="tab" data-pane="file">Adjuntar archivo</button>
+          </div>
+
+          <div class="pane active" id="pane-paste">
+            <textarea id="input" placeholder="Pega aquí el texto que quieras anonimizar…"></textarea>
+          </div>
+
+          <div class="pane" id="pane-file">
+            <div class="drop" id="drop">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>
+              </svg>
+              <div class="big">Arrastra un archivo aquí</div>
+              <div class="small">o haz clic para seleccionar · .docx o .txt</div>
+            </div>
+            <input type="file" id="fileInput" accept=".docx,.txt,text/plain" hidden>
+            <div class="filechip" id="fileChip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+              </svg>
+              <span class="nm" id="fileName"></span>
+              <button id="fileClear" title="Quitar archivo">×</button>
+            </div>
+            <div class="err" id="fileErr"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Términos y nombres a anonimizar</h2></div>
+        <div class="card-b">
+          <div class="section-t" style="margin-top:0">Términos personalizados</div>
+          <textarea id="custom" placeholder="Proyecto Atlas, Albión Capital, nombre concreto…"></textarea>
+          <div class="hint">Separa por comas. Cada coincidencia se sustituye por [TÉRMINO].</div>
+
+          <div class="section-t" style="margin-top:16px">Lista de empresas conocidas</div>
+          <div class="hint" style="margin-top:0;margin-bottom:9px">
+            Incluye una lista interna de empresas que se anonimizan siempre. Puedes
+            ampliarla cargando un archivo .txt o .csv con un nombre por línea (también
+            sirve separado por comas o por punto y coma). Nada se envía a ningún servidor.
+          </div>
+          <button class="btn" id="dictPick">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>
+            </svg>Cargar lista de empresas
+          </button>
+          <input type="file" id="dictFileInput" accept=".txt,.csv,text/plain,text/csv" hidden>
+          <div class="filechip" id="dictChip" style="margin-top:10px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+            </svg>
+            <span class="nm" id="dictName"></span>
+            <button id="dictClear" title="Vaciar la lista cargada">×</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Reglas de detección</h2></div>
+        <div class="card-b">
+          <div class="rules" id="rules"></div>
+
+          <div class="btn-row">
+            <button class="btn" id="clearBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>Limpiar todo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ COLUMNA RESULTADO ============ -->
+    <div class="col">
+      <div class="card">
+        <div class="card-h">
+          <h2>Resultado anonimizado</h2>
+          <label class="revtog" id="revLabel" title="Genera marcadores numerados ([ORG_1], [PERSONA_2]…) y un mapa para restaurar las entidades tras traducir el texto">
+            <input type="checkbox" id="tg-rev"> Modo reversible
+          </label>
+          <div class="counter" style="margin-left:14px"><span class="num" id="count">0</span><span class="lbl">sustituciones</span></div>
+        </div>
+        <div class="legend" id="legend"></div>
+        <div class="output" id="output">
+          <div class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>
+            </svg>
+            <div>El texto anonimizado aparecerá aquí.</div>
+          </div>
+        </div>
+        <div class="mapwrap" id="mapwrap" style="display:none">
+          <div class="section-t" style="margin-top:0">Mapa de restauración
+            <span class="hint" style="display:inline;margin:0">· guárdalo en local; no lo envíes al traductor</span>
+          </div>
+          <textarea id="mapBox" class="ta" readonly placeholder="Aquí aparece la correspondencia marcador = valor original."></textarea>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn" id="mapCopy">Copiar mapa</button>
+            <button class="btn" id="mapTxt">Descargar mapa .TXT</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-b">
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn" id="copyBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>Copiar al portapapeles
+            </button>
+            <button class="btn" id="txtBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>
+              </svg>Descargar .TXT
+            </button>
+            <button class="btn primary" id="docxBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>
+              </svg>Descargar .DOCX
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Restaurar entidades (tras traducir)</h2></div>
+        <div class="card-b">
+          <div class="hint" style="margin-top:0">Pega el texto ya traducido (que conserva los marcadores) y el mapa de restauración. Todo se procesa en local.</div>
+          <div class="section-t">Texto traducido</div>
+          <textarea id="transBox" class="ta" placeholder="Pega aquí el texto traducido con los marcadores [ORG_1], [PERSONA_2]…"></textarea>
+          <div class="section-t" style="margin-top:12px">Mapa de restauración</div>
+          <textarea id="restoreMap" class="ta" placeholder="ORG_1 = BlackRock
+PERSONA_1 = Juan Pérez
+CIFRA_1 = 1.250,50"></textarea>
+          <div class="btn-row">
+            <button class="btn primary" id="restoreBtn">Restaurar entidades</button>
+            <button class="btn" id="restoreCopy" disabled>Copiar resultado</button>
+          </div>
+          <div class="section-t" style="margin-top:12px">Resultado restaurado <span class="hint" id="restoreInfo" style="display:inline;margin:0"></span></div>
+          <div class="output" id="restoreOut" style="min-height:120px;max-height:40vh">
+            <div class="empty" style="padding:36px 20px">
+              <div>El texto con las entidades restauradas aparecerá aquí.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Procesamiento íntegro en el navegador: sin red, sin cookies y sin almacenamiento local.
+    La detección por expresiones regulares es heurística: revise siempre el resultado, ya que puede
+    producir falsos positivos (texto correcto marcado) y falsos negativos (datos sensibles no detectados).
+  </footer>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   1. UTILIDADES BINARIAS  (CRC-32, descompresión DEFLATE, lectura/escritura ZIP)
+   Implementación propia y autocontenida: no se usa mammoth.js ni docx.js
+   para garantizar "cero dependencias externas / cero CDN".
+   ===================================================================== */
+
+/* ---- CRC-32 ---- */
+const CRC_TABLE=(function(){
+  const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}
+  return t;
+})();
+function crc32(bytes){
+  let c=0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&0xFF]^(c>>>8);
+  return (c^0xFFFFFFFF)>>>0;
+}
+
+/* ---- Descompresión DEFLATE (inflate raw) ----
+   Algoritmo de decodificación canónica estilo "puff" (zlib, dominio público). */
+function buildTree(lengths,n){
+  const count=new Array(16).fill(0);
+  for(let i=0;i<n;i++)count[lengths[i]]++;
+  count[0]=0;
+  const offs=new Array(16).fill(0);
+  for(let i=1;i<16;i++)offs[i]=offs[i-1]+count[i-1];
+  const symbols=new Array(n).fill(0);
+  for(let i=0;i<n;i++)if(lengths[i])symbols[offs[lengths[i]]++]=i;
+  return {count,symbols};
+}
+function inflateRaw(input){
+  let pos=0,bitBuf=0,bitCnt=0;
+  const out=[];
+  function getBit(){
+    if(bitCnt===0){
+      if(pos>=input.length)throw new Error("Fin de datos inesperado");
+      bitBuf=input[pos++];bitCnt=8;
+    }
+    const b=bitBuf&1;bitBuf>>>=1;bitCnt--;return b;
+  }
+  function getBits(n){let v=0;for(let i=0;i<n;i++)v|=getBit()<<i;return v>>>0;}
+  function decode(tree){
+    let code=0,first=0,index=0;
+    for(let len=1;len<=15;len++){
+      code|=getBit();
+      const cnt=tree.count[len];
+      if(code-first<cnt)return tree.symbols[index+(code-first)];
+      index+=cnt;first=(first+cnt)<<1;code<<=1;
+    }
+    throw new Error("Código Huffman inválido");
+  }
+  const lenBase=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  const lenExtra=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  const distBase=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  const distExtra=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  const clOrder=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+
+  const fixLit=(function(){
+    const l=new Array(288);
+    for(let i=0;i<144;i++)l[i]=8;
+    for(let i=144;i<256;i++)l[i]=9;
+    for(let i=256;i<280;i++)l[i]=7;
+    for(let i=280;i<288;i++)l[i]=8;
+    return buildTree(l,288);
+  })();
+  const fixDist=buildTree(new Array(30).fill(5),30);
+
+  let last=0;
+  do{
+    last=getBit();
+    const type=getBits(2);
+    if(type===0){
+      bitCnt=0; // alinear a byte
+      const len=input[pos]|(input[pos+1]<<8);
+      pos+=4;
+      for(let i=0;i<len;i++)out.push(input[pos++]);
+    }else{
+      let litT,distT;
+      if(type===1){litT=fixLit;distT=fixDist;}
+      else if(type===2){
+        const hlit=getBits(5)+257,hdist=getBits(5)+1,hclen=getBits(4)+4;
+        const clLen=new Array(19).fill(0);
+        for(let i=0;i<hclen;i++)clLen[clOrder[i]]=getBits(3);
+        const clT=buildTree(clLen,19);
+        const all=new Array(hlit+hdist).fill(0);
+        let i=0;
+        while(i<hlit+hdist){
+          const s=decode(clT);
+          if(s<16){all[i++]=s;}
+          else if(s===16){const r=getBits(2)+3,p=all[i-1];for(let j=0;j<r;j++)all[i++]=p;}
+          else if(s===17){const r=getBits(3)+3;for(let j=0;j<r;j++)all[i++]=0;}
+          else{const r=getBits(7)+11;for(let j=0;j<r;j++)all[i++]=0;}
+        }
+        litT=buildTree(all.slice(0,hlit),hlit);
+        distT=buildTree(all.slice(hlit),hdist);
+      }else throw new Error("Bloque DEFLATE no soportado");
+      while(true){
+        const s=decode(litT);
+        if(s===256)break;
+        if(s<256){out.push(s);}
+        else{
+          const si=s-257;
+          const length=lenBase[si]+getBits(lenExtra[si]);
+          const ds=decode(distT);
+          const dist=distBase[ds]+getBits(distExtra[ds]);
+          let from=out.length-dist;
+          for(let j=0;j<length;j++)out.push(out[from++]);
+        }
+      }
+    }
+  }while(!last);
+  return new Uint8Array(out);
+}
+
+/* ---- Lectura de ZIP (estructura de un .docx) ----
+   Conserva, para cada entrada, los bytes crudos comprimidos, su método,
+   CRC y tamaños, de modo que las partes no modificadas puedan reempaquetarse
+   exactamente igual y se preserve íntegramente el formato del documento. */
+function readZip(buffer){
+  const dv=new DataView(buffer);
+  const bytes=new Uint8Array(buffer);
+  let eocd=-1;
+  for(let i=buffer.byteLength-22;i>=0;i--){
+    if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}
+  }
+  if(eocd<0)throw new Error("El archivo no es un ZIP/DOCX válido");
+  const cdCount=dv.getUint16(eocd+10,true);
+  let p=dv.getUint32(eocd+16,true);
+  const files={};
+  const order=[];
+  for(let i=0;i<cdCount;i++){
+    if(dv.getUint32(p,true)!==0x02014b50)break;
+    const method=dv.getUint16(p+10,true);
+    const crc=dv.getUint32(p+16,true);
+    const compSize=dv.getUint32(p+20,true);
+    const uncompSize=dv.getUint32(p+24,true);
+    const nameLen=dv.getUint16(p+28,true);
+    const extraLen=dv.getUint16(p+30,true);
+    const commLen=dv.getUint16(p+32,true);
+    const localOff=dv.getUint32(p+42,true);
+    const name=new TextDecoder("utf-8").decode(bytes.subarray(p+46,p+46+nameLen));
+    const lhName=dv.getUint16(localOff+26,true);
+    const lhExtra=dv.getUint16(localOff+28,true);
+    const dataStart=localOff+30+lhName+lhExtra;
+    files[name]={
+      method:method,crc:crc>>>0,uncompSize:uncompSize,
+      compData:bytes.slice(dataStart,dataStart+compSize)
+    };
+    order.push(name);
+    p+=46+nameLen+extraLen+commLen;
+  }
+  return {files:files,order:order};
+}
+function extractEntry(zip,name){
+  const f=zip.files[name];
+  if(!f)return null;
+  if(f.method===0)return f.compData;
+  if(f.method===8)return inflateRaw(f.compData);
+  throw new Error("Método de compresión no soportado en el DOCX");
+}
+
+/* ---- Escritura de ZIP ----
+   Cada entrada puede ser:
+     {name, raw:Uint8Array}                          -> se almacena con STORE
+     {name, method, crc, uncompSize, compData}       -> se copia tal cual
+   Copiar las partes intactas conserva su compresión y su contenido binario. */
+function makeZip(entries){
+  const enc=new TextEncoder();
+  const chunks=[],central=[];
+  let offset=0;
+  const u16=(a,v)=>{a.push(v&0xFF,(v>>>8)&0xFF);};
+  const u32=(a,v)=>{a.push(v&0xFF,(v>>>8)&0xFF,(v>>>16)&0xFF,(v>>>24)&0xFF);};
+  for(const e of entries){
+    const nm=enc.encode(e.name);
+    let method,crc,compData,uncompSize;
+    if(e.raw!==undefined){
+      method=0;compData=e.raw;uncompSize=e.raw.length;crc=crc32(e.raw);
+    }else{
+      method=e.method;compData=e.compData;uncompSize=e.uncompSize;crc=e.crc;
+    }
+    const lh=[];
+    u32(lh,0x04034b50);u16(lh,20);u16(lh,0);u16(lh,method);u16(lh,0);u16(lh,0);
+    u32(lh,crc);u32(lh,compData.length);u32(lh,uncompSize);u16(lh,nm.length);u16(lh,0);
+    for(const b of nm)lh.push(b);
+    const lhB=new Uint8Array(lh);
+    chunks.push(lhB,compData);
+    const cd=[];
+    u32(cd,0x02014b50);u16(cd,20);u16(cd,20);u16(cd,0);u16(cd,method);u16(cd,0);u16(cd,0);
+    u32(cd,crc);u32(cd,compData.length);u32(cd,uncompSize);u16(cd,nm.length);u16(cd,0);u16(cd,0);
+    u16(cd,0);u16(cd,0);u32(cd,0);u32(cd,offset);
+    for(const b of nm)cd.push(b);
+    central.push(new Uint8Array(cd));
+    offset+=lhB.length+compData.length;
+  }
+  const cdStart=offset;let cdSize=0;
+  for(const c of central){chunks.push(c);cdSize+=c.length;}
+  const eo=[];
+  u32(eo,0x06054b50);u16(eo,0);u16(eo,0);u16(eo,entries.length);u16(eo,entries.length);
+  u32(eo,cdSize);u32(eo,cdStart);u16(eo,0);
+  chunks.push(new Uint8Array(eo));
+  let total=0;for(const c of chunks)total+=c.length;
+  const out=new Uint8Array(total);let q=0;
+  for(const c of chunks){out.set(c,q);q+=c.length;}
+  return out;
+}
+
+/* =====================================================================
+   2. DOCX  ·  lectura de texto y escritura preservando formato
+   ===================================================================== */
+
+/* Partes XML de un .docx que contienen texto visible. */
+function isTextPart(name){
+  return /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/.test(name);
+}
+
+/* Lee un .docx: devuelve el zip completo (para reempaquetar) y el texto del cuerpo. */
+function parseDocx(buffer){
+  const zip=readZip(buffer);
+  const xmlBytes=extractEntry(zip,"word/document.xml");
+  if(!xmlBytes)throw new Error("No se encontró word/document.xml en el DOCX");
+  const xml=new TextDecoder("utf-8").decode(xmlBytes);
+  const doc=new DOMParser().parseFromString(xml,"application/xml");
+  if(doc.getElementsByTagName("parsererror").length)
+    throw new Error("No se pudo interpretar el contenido del DOCX");
+  const paras=doc.getElementsByTagName("w:p");
+  const lines=[];
+  for(let i=0;i<paras.length;i++){
+    const p=paras[i];
+    let txt="";
+    const nodes=p.getElementsByTagName("*");
+    for(let j=0;j<nodes.length;j++){
+      const tag=nodes[j].tagName;
+      if(tag==="w:t")txt+=nodes[j].textContent;
+      else if(tag==="w:tab")txt+="\t";
+      else if(tag==="w:br"||tag==="w:cr")txt+="\n";
+    }
+    lines.push(txt);
+  }
+  return {zip:zip,text:lines.join("\n")};
+}
+
+/* Anonimiza un fragmento XML de Word sustituyendo el texto dentro de <w:t>,
+   párrafo a párrafo, sin tocar estilos, fuentes, tablas, imágenes ni runs.
+   El reparto del texto anonimizado se hace por fronteras de run, de modo que
+   cada <w:r> conserva su formato propio. */
+function anonymizeWordXml(xml,matcher){
+  const doc=new DOMParser().parseFromString(xml,"application/xml");
+  if(doc.getElementsByTagName("parsererror").length)return xml; // se deja intacto
+  /* Agrupar los <w:t> por su párrafo <w:p> ancestro inmediato. */
+  const tAll=doc.getElementsByTagName("w:t");
+  const groups=new Map();
+  for(let i=0;i<tAll.length;i++){
+    let anc=tAll[i].parentNode;
+    while(anc&&anc.tagName!=="w:p")anc=anc.parentNode;
+    if(!anc)continue;
+    if(!groups.has(anc))groups.set(anc,[]);
+    groups.get(anc).push(tAll[i]);
+  }
+  groups.forEach(function(tNodes){
+    let full="";const ranges=[];
+    for(const t of tNodes){
+      const s=full.length;full+=t.textContent;
+      ranges.push({node:t,s:s,e:full.length});
+    }
+    if(!full)return;
+    const accepted=matcher(full);
+    if(!accepted.length)return;
+    const newText=ranges.map(()=>"");
+    function nodeAt(x){
+      for(let i=0;i<ranges.length;i++)
+        if(x>=ranges[i].s&&x<ranges[i].e)return i;
+      return ranges.length-1;
+    }
+    let cursor=0,mi=0;
+    while(cursor<full.length){
+      if(mi<accepted.length&&cursor===accepted[mi].s){
+        newText[nodeAt(cursor)]+=TAG_TEXT[accepted[mi].type];
+        cursor=accepted[mi].e;mi++;
+      }else{
+        const ni=nodeAt(cursor);
+        let next=ranges[ni].e;
+        if(mi<accepted.length&&accepted[mi].s<next)next=accepted[mi].s;
+        newText[ni]+=full.slice(cursor,next);
+        cursor=next;
+      }
+    }
+    for(let i=0;i<ranges.length;i++){
+      ranges[i].node.textContent=newText[i];
+      ranges[i].node.setAttribute("xml:space","preserve");
+    }
+  });
+  let out=new XMLSerializer().serializeToString(doc);
+  if(!/^\s*<\?xml/.test(out))
+    out='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+out;
+  return out;
+}
+
+/* Reempaqueta el .docx original anonimizando sus partes de texto y
+   copiando intactas todas las demás (estilos, numeración, imágenes, relaciones…). */
+function anonymizeDocxFile(zip,matcher){
+  const enc=new TextEncoder();
+  const entries=[];
+  for(const name of zip.order){
+    const f=zip.files[name];
+    if(isTextPart(name)){
+      const xml=new TextDecoder("utf-8").decode(extractEntry(zip,name));
+      const newXml=anonymizeWordXml(xml,matcher);
+      entries.push({name:name,raw:enc.encode(newXml)});
+    }else{
+      entries.push({name:name,method:f.method,crc:f.crc,
+        uncompSize:f.uncompSize,compData:f.compData});
+    }
+  }
+  return makeZip(entries);
+}
+
+function xmlEscape(s){
+  return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,"")
+          .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* Genera un .docx simple desde texto plano (solo cuando no hay documento
+   original que preservar, p. ej. entrada pegada a mano o texto editado). */
+function textToDocx(text){
+  const paras=text.split(/\r?\n/).map(function(line){
+    if(line==="")return "<w:p/>";
+    return '<w:p><w:r><w:t xml:space="preserve">'+xmlEscape(line)+"</w:t></w:r></w:p>";
+  }).join("");
+  const documentXml=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
+    "<w:body>"+paras+
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>'+
+    '<w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/>'+
+    "</w:sectPr></w:body></w:document>";
+  const contentTypes=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'+
+    "</Types>";
+  const rels=
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'+
+    "</Relationships>";
+  const enc=new TextEncoder();
+  return makeZip([
+    {name:"[Content_Types].xml",raw:enc.encode(contentTypes)},
+    {name:"_rels/.rels",raw:enc.encode(rels)},
+    {name:"word/document.xml",raw:enc.encode(documentXml)}
+  ]);
+}
+
+/* =====================================================================
+   3. MOTOR DE ANONIMIZACIÓN  (expresiones regulares)
+   ===================================================================== */
+const U="A-ZÁÉÍÓÚÜÑ", L="a-záéíóúüñ";
+const W="["+U+"]["+L+"]+";              // palabra capitalizada
+const TOK="["+U+"][A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ&.\\-]*"; // token de organización
+
+/* Palabras frecuentes que no inician un nombre propio */
+const STOP=new Set(("el la los las un una unos unas este esta estos estas ese esa esos esas "+
+  "aquel aquella su sus mi mis tu tus su en de del y o a ante con por para según sin sobre tras "+
+  "además también pero aunque cuando donde como mientras durante entre hacia hasta desde "+
+  "the this that these those a an our your his her their its and or at to of for").split(" "));
+
+/* Siglas genéricas que no conviene marcar como organización */
+const SIGLA_SKIP=new Set(("CEO CFO COO CTO CMO CIO IPO ESG PDF FAQ API URL APP IT HR PR CV "+
+  "AM PM ID VAT GDP IVA IRPF NIF DNI CIF USD EUR GBP CHF JPY UE OK").split(" "));
+
+/* Lugares (lista cerrada, ES / UK / Europa / plazas financieras) */
+const PLACES=["New York","Hong Kong","San Francisco","Los Angeles","São Paulo","Sao Paulo",
+ "Northern Ireland","Buenos Aires","Ciudad de México","Mexico City","Abu Dhabi",
+ "País Vasco","Pais Vasco","Comunidad Valenciana","Castilla y León","Castilla-La Mancha",
+ "Las Palmas","Santiago de Compostela","A Coruña","La Coruña","La Rioja","Islas Baleares",
+ "Madrid","Barcelona","Valencia","Sevilla","Bilbao","Málaga","Malaga","Zaragoza","Murcia",
+ "Granada","Alicante","Valladolid","Vigo","Gijón","Pamplona","Santander","Toledo","Salamanca",
+ "Cataluña","Cataluna","Andalucía","Andalucia","Galicia","Aragón","Aragon","Extremadura",
+ "Asturias","Cantabria","Navarra","Canarias","Baleares",
+ "London","Londres","Manchester","Birmingham","Edinburgh","Edimburgo","Glasgow","Leeds",
+ "Liverpool","Bristol","Cardiff","Belfast","Scotland","Escocia","Wales","Gales","England",
+ "Inglaterra","Sheffield","Nottingham","Oxford","Cambridge",
+ "Paris","París","Frankfurt","Fráncfort","Berlin","Berlín","Amsterdam","Ámsterdam","Brussels",
+ "Bruselas","Luxembourg","Luxemburgo","Zurich","Zúrich","Geneva","Ginebra","Milan","Milán",
+ "Rome","Roma","Dublin","Dublín","Lisbon","Lisboa","Vienna","Viena","Stockholm","Estocolmo",
+ "Copenhagen","Copenhague","Oslo","Helsinki","Warsaw","Varsovia","Prague","Praga","Athens","Atenas",
+ "Tokyo","Tokio","Singapore","Singapur","Shanghai","Shanghái","Dubai","Dubái","Toronto","Sydney",
+ "Mumbai","Chicago","Boston","Seattle","Beijing","Pekín","Shenzhen"];
+
+const KNOWN_ORGS=[
+ "A.T. Kearney", "Abbott Medical Optics", "Abengoa", "Acciona", "Acciona Energía", "Aceralia",
+ "Acerinox", "ACI Worldwide", "acierto.com", "Açores Tourism Agency", "ACS", "ActivumSG", "Adams",
+ "Adara VP", "Adecco", "Adobe Systems", "Adolfo Domínguez", "Advent International", "Aedas",
+ "Aedas Homes", "Aena", "AERI", "Aeroclub de Colombia", "AeroMexico", "Aerospatiale", "Ahold",
+ "Air Liquide", "Airbus", "Airtificial", "Alantra", "Alcatel Alsthom", "Alien Vault",
+ "Allen & Overy", "Allianz Real Estate", "Allied Telesis", "Almanzora Group", "Almirall",
+ "Alphabet", "Altán Redes", "Altec Lansing", "Altrus", "Amadeus", "Amadeus España", "Ambac",
+ "American Airlines", "Amica", "Amorim", "Amper", "AmRest", "ANEI", "APD", "Aperam", "Apple",
+ "Applus", "Aptimus Capital Partner", "Aquila Capital", "Aragonesas", "ArcelorMittal",
+ "Argentaria", "Árima", "Armacell", "Arrow Capital Partners", "ASAC Pharma", "ASG",
+ "Asociación de Consultoras Inmobiliarias", "Asociación para el Progreso de la Dirección",
+ "ASPA Cine Video", "Associacão Brasileira de Franchising", "Asturiana de Zinc", "ATP",
+ "Atresmedia", "Atrio", "Atrys", "Atrys Health", "Auction.com", "Audax", "Audax Renovables",
+ "auna", "auping", "Aurquia", "Australian Embassy in Spain", "Avantis", "Avatel",
+ "Avis Fleet Services", "Aviva Investors", "AXA Investment Managers", "Axon Partners Group",
+ "Azerbaijan Government", "Azkoyen", "Aztec Exchange", "Aztec Money", "Babylon", "Bain & Company",
+ "Bain Capital", "Bain Capital Credit", "Banco Caixa Geral", "Banco Comercial Portugués",
+ "Banco de España", "Banco Interamericano de Desarrollo", "Banco Julius Bär", "Banco Sabadell",
+ "Banco Santander", "Bank of America", "Bankinter", "Barclays", "Barclays Global Investors",
+ "BASF Construction Chemicals", "Bayco Cocinas", "BBVA", "Beat", "Bell Atlantic",
+ "Bellavista Factory Outlet", "Bellinger", "Benson Elliot", "Berkeley Energía", "Best Buddies",
+ "Bestinver", "Beta Systems", "BG Energy Group", "BID", "Bio RAD", "BioCatch", "BlackRock",
+ "BlackRock Merrill Lynch", "Blink Me", "Blockchain Summit", "Bloomberg Capital Markets Forum",
+ "BlueVoyant", "Blurb", "BNP Paribas", "Bodegas Riojanas", "Booz Allen Hamilton", "Bosquenible",
+ "Boston University Global", "Bradespar", "Bravo3", "breakingviews", "Bridgepoint", "Brita",
+ "British Airways Consortium", "Brookfield", "Buildcom", "Cabi", "Cabify", "Cablecom",
+ "Caesars Entertainment", "CAF", "Caixa Geral de Depósitos", "CaixaBank",
+ "Caja de Previsión y Socorro", "CajAstur", "Callaway Golf",
+ "Campeonato de España de Vuelo Acrobático", "Campofrío Food Group",
+ "Canadian Pension Plan Investment Board", "Canvas", "Capgemini", "CapXnow", "Carbon Black",
+ "Carmignac Risk Managers", "Cash Converters", "CAST Software", "Catalana Occidente",
+ "CB Richard Ellis", "CBRE", "CCC Network Systems", "Cellnex", "Centerplate", "CEPSA", "Certum",
+ "CEVA", "CEVASA", "Chemviron Carbon", "Chivas Regal", "Christian Salvesen", "CIE Automotive",
+ "Cintra", "Cinven", "Circle Hotels", "Citibank VISA", "CityU", "Clarabridge", "ClarkeModet",
+ "Clifford Chance", "Climate Change Capital", "Climate Strategy & Partners", "ClimateWell",
+ "Clínica Baviera", "Clinique", "Club Acrobático Central", "CMS Albiñana & Suarez de Lezo",
+ "Coca-Cola Europacific Partners", "Código Visual", "Coller Capital", "Colonial", "Colsugar",
+ "Combined Insurance", "Comisión Europea", "Compass Group",
+ "Confederación Nacional de Entidades de Previsión", "Coral Homes", "Corbana", "Corporación Alba",
+ "Corporación Financiera Alba", "Cortal", "Costain Group", "CPPIB",
+ "Credit Suisse Asset Management", "Credit Suisse Gestión",
+ "Credit Suisse International Wealth Management",
+ "Credit Suisse Investment Banking and Capital Markets", "Crisalion Mobility", "Crowe Horwath",
+ "Crystal Lagoon", "CTT Tourline Express", "CVC Capital Partners", "Cytori Therapeutics",
+ "datelnet gröep", "David S Smith", "Davita", "Davivienda", "De La Rue", "Dell' Ugo", "Deloitte",
+ "Deoleo", "Deutsche Bank", "Deutsche Hyp", "Dialectica", "Diaverum", "DIGSA", "Dinamia",
+ "Diversey", "DJE Kapital", "DLJ Real Estate Capital Partners", "Dominion", "Dow Jones", "Dräger",
+ "DRBS", "Dresdner Kleinwort", "DT Directores de Transición", "Dufry Group",
+ "Dun & Bradstreet Software", "Duracell", "Duro Felguera", "e-Hospital Systems", "earthport",
+ "Ebro Foods", "Ecoener", "Ecoplanet", "EDF", "EDF Fenice Ibérica", "EDP Renováveis", "eDreams",
+ "eDreams ODIGEO", "EIB", "el Market", "El Palma el Tuca", "Elecnor",
+ "ELITIA Real Estate Advisors", "Elvirio", "EMECA", "Eminox", "Empark", "Empire Group", "Enagás",
+ "ENCE", "Endangered Species", "Endesa", "Endeva", "Energías de Portugal", "Engelhard Corporation",
+ "Engie", "ENVA", "Epson", "EPWN", "EQT", "Equipo Nacional de Vuelo Acrobático",
+ "Erco Illuminación", "Ercros", "Escola de Gestão do Porto", "Esselte Business Systems", "Etergo",
+ "EU Copernicus", "EU Help", "eu-supply.com", "Eumetsat", "Eurazeo", "EURid", "Euro CCP",
+ "Euronext", "Europe's 500", "European Capital", "European Investment Bank", "European Union",
+ "Euskaltel", "Everest Insurance", "Exel Logistics", "ExxonMobil", "Ezentis", "Faes Farma",
+ "FAPESP", "FCB", "FCC", "Feira Internacional de Lisboa", "Felix Scöller", "Ferrostaal",
+ "Ferrovial", "Fidinam", "FinSolutia", "FLAG Telecom", "Fleming Asset Management", "Fluidra",
+ "Flywire", "Fomento de Construcciones y Contratas", "Fonatur", "Fondation Mérieux", "Formscape",
+ "Foro Colombia", "Foro M Colombia", "Franklin Templeton", "French Embassy in Spain",
+ "FSC Forest Stewardship Council", "FTI Consulting", "Fundación BIACS", "Gallery Hotels",
+ "Gama Direct", "Garrigues", "GE Capital", "GE Capital Real Estate", "GE Industrial Solutions",
+ "GE Money", "GE Oil & Gas", "GECAS", "General Cable", "General de Alquiler de Maquinaria",
+ "General Electric", "GES Seguros", "Gestamp", "Getac", "Glaxo SmithKline", "Global Dominion",
+ "GMT", "GNV", "Goenka", "Goldman Sachs", "Goldman Sachs Asset Management",
+ "Goldman Sachs Capital Partners", "Gordon Brothers", "GPS Music", "Grace Construction Products",
+ "GrafTech Advanced Energy Technology", "Grandi Navi Veloci", "Grayling Industries", "Grenergy",
+ "Grifols", "Grosvenor Europe", "Groupe Promodès", "Groupe Renault", "Grupo André Jordan",
+ "Grupo Catalana Occidente", "Grupo Damm", "Grupo DIA", "Grupo Dragados", "Grupo Ferrovial",
+ "Grupo Fortuny", "Grupo LAR", "Grupo Oceânico", "Grupo Prisa", "Grupo Queiroz Pereira",
+ "Grupo San José", "Grupo Santander", "Grupo SEMI", "Grupo Sepro", "Guascor Solar Corporation",
+ "H.B.Fuller", "H.I.G. Capital", "H.M. Government of Gibraltar", "HarbourVest", "Haya Real Estate",
+ "Helppy", "Henderson New Star", "Heron International", "Hertz Fleet Services", "HidroCantábrico",
+ "Hilco", "Hillsdown Holdings", "Hilton Hotels International", "Hines",
+ "Hispania Activos Inmobiliarios", "Hitachi", "hkp", "Holland & Knight",
+ "Hostettler, Kramarsch & Partner", "Hotel Hassler", "Hotel Ritz", "Hotel Suecia", "Hotelbeds",
+ "Hune", "Hyatt Hotels Corporation", "i-21", "IAG", "Iberdrola", "Iberdrola Inmobiliaria",
+ "Iberpapel", "Iberpapel Gestión", "IBM", "ICMedia", "ICSC", "IESE", "IFCO",
+ "Ignis Asset Management", "iM Global Partner", "Imade", "Imtech", "Inditex", "Indra", "Infinorsa",
+ "Infosys", "ING Investment Management", "Ingénico Group", "Initiative For Software Choice",
+ "Inmarsat", "Inmobiliaria Colonial", "Inmobiliaria del Sur", "Inmobiliaria Urbis", "Inmocapital",
+ "Inmoglaciar", "Inspiring Girls", "Instituto de Ortopedia Infantil Roosevelt",
+ "Intel Corporation", "International Council For Shopping Centres", "Internet Society",
+ "Interoute", "Inversiones Ibersuizas", "Investcorp", "IREA", "IslaLink", "Itevelesa",
+ "ITT Corporation", "IVI RMA", "Jamaican Tourist Board", "Janus Henderson Investors", "Jazztel",
+ "JER Partners", "Jetstream", "JLL", "jobandtalent", "Johnson Matthey", "Jones Day",
+ "Joyas Inversión", "JP Morgan", "Julius Bär Investment Funds", "Kaupthing Edge", "Kennedy Wilson",
+ "Kimberley Clark", "Kinexon", "King Sturge", "Kingspan", "Knight Frank",
+ "Knightsbridge Schools International", "Knightsbridge Student Housing", "Kodak Alaris",
+ "Kreston Global", "Kroll", "Kruk", "Kubi Wireless", "La Serrezuela", "LabCorp Prosek",
+ "Laboratoria", "Laboratorios Rovi", "LAMAT", "Lar España", "Larry Smith & Durco",
+ "LaSalle Investment Management", "Leadiant Biosciences", "Legg Mason", "Leighton Holdings",
+ "Leo Pharma", "Leukosite", "Liberate Technologies", "Liberbank", "Libertas 7",
+ "Liberty Acquisition Holdings", "Línea Directa", "Lingotes Especiales", "LinkedIn", "Listao",
+ "LMAX", "Loewe", "Logicor", "Logista", "Lola Gifts", "Loto del Sur", "Luxottica Group",
+ "M&G Investments", "M&G Real Estate", "Macquarie", "Mail.de", "Majestic Hotel",
+ "Malaysian Airlines", "MAMBO", "MandrakeSoft", "Mapfre", "Markel International", "Master Series",
+ "MBIA", "Media Partners", "Mediaset España", "Mediobanca", "Meliá", "Meliá Hotels",
+ "Merlin Properties", "Metrovacesa", "Mexican Secretariat of Tourism", "Mexico Pacific",
+ "MFS Investment Management", "Midland Iberia", "Miquel y Costas", "Mitsubishi Plastics",
+ "Mohari Hospitality", "Moneycorp", "Montebalito", "Morgan Consulting", "Morgan Stanley",
+ "Mothercare", "MTS Consultoría + Gestión", "Muchomedia", "Multihotel Group", "Mumtalakat", "MWH",
+ "N. M. Rothschild", "Nasdaq Europe", "National Express", "Naturgy", "Naturhouse", "NEC", "Neinor",
+ "Neinor Homes", "New Star Asset Management", "NH Hotel Group", "NH Hoteles", "Nicolás Correa",
+ "Nicox", "Nomura", "Nordea", "Norman Broadment", "North West Water", "Norton Rose", "Noventiq",
+ "NTC Research", "Nuance", "Nueva Expresión Textil", "Numara Software", "Nuveen", "Nyesa", "O2",
+ "Oakley Capital", "Oaktree Capital Management", "Oakwood Global Finance", "Oberthur Technologies",
+ "Obrascón Huarte Laín", "Occidental Hotels", "Odinsa", "Odyssey Services Organisation", "OHL",
+ "OHLA", "Oliver Wyman", "Olympus Sports", "Onivia", "ONO", "Opain", "OpCapita", "OPDEnergy",
+ "Orey iTrade", "OroValle Minerals", "Ortíz León Arquitectos", "Oryzon", "Oryzon Genomics",
+ "OTB Solar", "Otto Walter", "Outsourcing & Retail Services", "PAC", "Packetvideo",
+ "Palamon Capital Partners", "Parkridge Holdings", "Parques Reunidos", "PASS Europe",
+ "Patrulla Aérea Civil Colombiana", "PayPal", "Pearson", "PEI", "Pelayo",
+ "Pemberton Asset Management", "Perle Systems", "Pescanova", "Petit Rams", "Pfizer", "PharmaMar",
+ "Philips", "PIMCO", "Pizza King", "PLD Space", "Podo", "Poly", "Polymath Ventures", "Prebesec",
+ "Prim", "Prime Response", "Private Media Group", "Pro Corp", "Prodigious", "Proexport Colombia",
+ "Promotora Mediterránea", "Promperú", "Prosegur", "Prosegur Cash", "Proximedia",
+ "Publicis Sapient", "Puertas Cubells", "Puerto de Indias", "Puig", "Puig Brands", "Puntored",
+ "Putzmeister", "QBO", "Qiagen", "Quadia", "Qualilife", "Questionet", "Quios", "Rambico", "Raona",
+ "RateXchange", "Rational Software", "RBC Investor Services", "Realia", "Rebus", "Red Eléctrica",
+ "Red Eléctrica de España", "Red Hat Linux", "Redeia", "Redexis Gas", "REE", "Reig Jofre",
+ "Renovalia Energy", "Renta 4", "Renta Corporación", "Repsol", "Repsol YPF", "Retail Parks",
+ "Retalix Synergy", "Riviera Nayarit", "Robeco", "Rockwell Automation", "Rovi", "RSA",
+ "RSA Security", "Rumbo", "S.G. Warburg", "Sabadell", "Sabre", "Sacyr", "SafeNet",
+ "Salão Imobiliário de Lisboa", "SALSA", "Santander", "SAR Energy",
+ "Savills Investment Management", "Saxo Bank", "Schipol Amsterdam Airport", "Schlecker", "Schott",
+ "Schroder & Co", "Schroders Investment Management", "Scope Ratings",
+ "Scottish Development International", "Scottish Widows Investment Partnership",
+ "Scudder Threadneedle", "SDI", "Seagate Software", "Sello", "SEPI", "Service Point", "ServiceNow",
+ "Servihabitat", "Shire Pharmaceuticals", "Siemens Gamesa", "Siemens Healthcare", "Silex Parners",
+ "Simon-Kucher & Partners", "Six Senses", "SKG Tecnologia", "Smart People Time",
+ "Sociedad Azucarera Larios", "Sociedad Española de Montajes Industriales", "Société Générale",
+ "Sofinsa", "Sogeti España", "Sol Meliá", "Solaria", "Soltec", "Solvay Pharma", "Sonae",
+ "Sonae Inmobiliaria", "Sonaecom", "Sony", "Sophis", "Sotogrande", "Spectrum", "SQS",
+ "Squirrel Media", "SSB Citi Asset Management", "SSE Renewables", "Staff&Line", "Statkraft",
+ "Stora Enso", "StormHarbour", "SunGard", "Superdiplo", "Swiss Bankers Association", "Talengo",
+ "Talgo", "Tapsa", "TDX Indigo", "Técnicas Reunidas", "Tecnosistemi", "Telefónica",
+ "Telefónica Móviles", "Telenet", "Telepizza", "Tendam", "Terranum", "Testa",
+ "The London Stock Exchange", "The Peabody Group", "The Seminole Tribe",
+ "The Wall Street Journal Europe", "Thomson Travel Group", "Tiffany & Co.", "Tinsa",
+ "Tishman Speyer", "todovino.com", "toolani", "Tooway", "Towers Watson", "TPG",
+ "Tristan Capital Partners", "Tubacex", "Tubos Reunidos", "Turismo de Porto Alegre", "TUYYOU",
+ "UBS Investment Funds", "UBS Wealth Management", "UK&European Investments", "Ulife", "UMILES UAV",
+ "Unicaja", "Unicaja Banco", "UNIQ Residential", "Unlimited Aerobatics", "URBACT", "Urbas",
+ "Vaillant", "Vallarta Nayarit", "Verizon", "Vertiv", "Vidrala", "Virgin Telco", "Virtualmind",
+ "Viscofan", "Vision Solutions", "Vitaldent", "Vitria Technology", "Vivendi", "VocaLink",
+ "Vocento", "Vodafone", "VOJ Media", "Vontobel", "Vorverk", "Warner Bros. Consumer Products",
+ "Wayflyer", "WeCity", "Wesley", "West AM", "WOB", "World Duty Free Group", "World Gold Council",
+ "Worldline", "worldoffruit.com", "Xango", "Xpert", "XPLANE", "Yara", "Yell Group", "YPO",
+ "Yunus & You Foundation-Yunus Negocios Sociales", "Yunus Social Business", "Zebra Technologies"
+];
+
+const INTL_ORGS=[
+ "3M", "A. O. Smith", "Abbott", "Abbott Laboratories", "AbbVie", "Accenture", "Adobe", "ADP",
+ "Advanced Micro Devices", "AES Corporation", "Aflac", "Agilent", "AIG", "Air Products", "Airbnb",
+ "Akamai", "Albemarle", "Alexandria Real Estate", "Align Technology", "Allegion", "Alliant Energy",
+ "Allstate", "Altria", "Amazon", "Amcor", "AMD", "Ameren", "American Electric Power",
+ "American Express", "American International Group", "American Tower", "American Water Works",
+ "Ameriprise", "Ametek", "Amgen", "Amphenol", "Analog Devices", "Aon", "APA Corporation",
+ "Apollo Global Management", "Applied Materials", "AppLovin", "Aptiv", "Arch Capital",
+ "Archer Daniels Midland", "Ares Management", "Arista Networks", "Arthur J. Gallagher", "Assurant",
+ "AT&T", "Atmos Energy", "Autodesk", "Automatic Data Processing", "AutoZone", "AvalonBay",
+ "Avery Dennison", "Axon Enterprise", "Baker Hughes", "Ball Corporation", "Baxter",
+ "Becton Dickinson", "Berkshire Hathaway", "Best Buy", "Bio-Techne", "Biogen", "Blackstone",
+ "BNY Mellon", "Boeing", "Booking Holdings", "Booking.com", "Boston Scientific",
+ "Bristol Myers Squibb", "Broadcom", "Broadridge", "Brown & Brown", "Brown-Forman",
+ "Builders FirstSource", "Bunge", "C.H. Robinson", "Cadence", "Camden Property Trust",
+ "Campbell's", "Capital One", "Cardinal Health", "Carnival", "Carrier Global", "Carvana",
+ "Caterpillar", "Cboe Global Markets", "CDW", "Cencora", "Centene", "CenterPoint Energy",
+ "CF Industries", "Charles River Laboratories", "Charles Schwab", "Charter Communications",
+ "Chevron", "Chipotle", "Chubb", "Church & Dwight", "Ciena", "Cigna", "Cincinnati Financial",
+ "Cintas", "Cisco", "Citigroup", "Citizens Financial Group", "Clorox", "CME Group", "CMS Energy",
+ "Coca-Cola", "Cognizant", "Coinbase", "Colgate-Palmolive", "Comcast", "Comfort Systems USA",
+ "Conagra", "ConocoPhillips", "Consolidated Edison", "Constellation Brands",
+ "Constellation Energy", "Cooper Companies", "Copart", "Corning", "Corpay", "Corteva", "CoStar",
+ "Costco", "Coterra", "CRH", "CrowdStrike", "Crown Castle", "CSX", "Cummins", "CVS Health",
+ "D. R. Horton", "Danaher", "Darden Restaurants", "Datadog", "Deckers Brands", "Deere",
+ "Dell Technologies", "Delta Air Lines", "Devon Energy", "Dexcom", "Diamondback Energy",
+ "Digital Realty", "Disney", "Dollar General", "Dollar Tree", "Dominion Energy", "Domino's",
+ "DoorDash", "Dover", "Dow Inc.", "DTE Energy", "Duke Energy", "DuPont", "Eaton", "eBay", "Ecolab",
+ "Edison International", "Edwards Lifesciences", "Electronic Arts", "Elevance Health", "Eli Lilly",
+ "Emcor", "Emerson Electric", "Entergy", "EOG Resources", "EPAM Systems", "EQT Corporation",
+ "Equifax", "Equinix", "Equity Residential", "Erie Indemnity", "Essex Property Trust",
+ "Estée Lauder", "Everest Group", "Evergy", "Eversource", "Exelon", "Expand Energy", "Expedia",
+ "Expeditors International", "Extra Space Storage", "F5", "FactSet", "Fair Isaac", "Fastenal",
+ "Federal Realty", "FedEx", "Fidelity National Information Services", "Fifth Third", "First Solar",
+ "FirstEnergy", "Fiserv", "Ford", "Fortinet", "Fortive", "Fox Corporation", "Franklin Resources",
+ "Freeport-McMoRan", "Garmin", "Gartner", "GE Aerospace", "GE HealthCare", "GE Vernova",
+ "Gen Digital", "Generac", "General Dynamics", "General Mills", "General Motors", "Genuine Parts",
+ "Gilead Sciences", "Global Payments", "Globe Life", "GoDaddy", "Halliburton", "Hasbro",
+ "HCA Healthcare", "Healthpeak", "Henry Schein", "Hershey", "Hewlett Packard Enterprise",
+ "Hilton Worldwide", "Hologic", "Home Depot", "Honeywell", "Hormel", "Host Hotels & Resorts",
+ "Howmet Aerospace", "HP Inc.", "Hubbell", "Humana", "Huntington Bancshares", "Huntington Ingalls",
+ "IDEX Corporation", "Idexx Laboratories", "Illinois Tool Works", "Incyte", "Ingersoll Rand",
+ "Insulet", "Intel", "Interactive Brokers", "Intercontinental Exchange",
+ "International Flavors & Fragrances", "International Paper", "Intuit", "Intuitive Surgical",
+ "Invesco", "Invitation Homes", "IQVIA", "Iron Mountain", "J.B. Hunt", "J.M. Smucker", "Jabil",
+ "Jack Henry", "Jacobs Solutions", "Johnson & Johnson", "Johnson Controls", "JPMorgan",
+ "JPMorgan Chase", "Kenvue", "Keurig Dr Pepper", "KeyCorp", "Keysight", "Kimberly-Clark",
+ "Kimco Realty", "Kinder Morgan", "KKR", "KLA Corporation", "Kraft Heinz", "Kroger", "L3Harris",
+ "Labcorp", "Lam Research", "Lamb Weston", "Las Vegas Sands", "Leidos", "Lennar", "Lennox",
+ "Linde", "Live Nation", "Lockheed Martin", "Loews", "Lowe's", "Lululemon", "LyondellBasell",
+ "M&T Bank", "Marathon Petroleum", "Marriott", "Marsh McLennan", "Martin Marietta", "Masco",
+ "Mastercard", "Match Group", "McCormick", "McDonald's", "McKesson", "Medtronic", "Merck",
+ "Meta Platforms", "MetLife", "Mettler Toledo", "MGM Resorts", "Microchip Technology", "Micron",
+ "Microsoft", "Mid-America Apartment Communities", "Moderna", "Molina Healthcare", "Molson Coors",
+ "Mondelez", "Monolithic Power Systems", "Monster Beverage", "Moody's", "Mosaic Company",
+ "Motorola Solutions", "MSCI", "Nasdaq", "NetApp", "Netflix", "Newmont", "News Corp",
+ "NextEra Energy", "Nike", "NiSource", "Nordson", "Norfolk Southern", "Northern Trust",
+ "Northrop Grumman", "Norwegian Cruise Line", "NRG Energy", "Nucor", "Nvidia", "NVR",
+ "NXP Semiconductors", "O'Reilly", "Occidental Petroleum", "Old Dominion", "Omnicom",
+ "ON Semiconductor", "Oneok", "Oracle", "Otis Worldwide", "Paccar",
+ "Packaging Corporation of America", "Palantir", "Palo Alto Networks", "Paramount Skydance",
+ "Parker Hannifin", "Paychex", "Paycom", "Pentair", "PepsiCo", "PG&E", "Philip Morris",
+ "Phillips 66", "Pinnacle West", "PNC", "Pool Corporation", "PPG", "PPL", "Principal Financial",
+ "Procter & Gamble", "Progressive Corporation", "Prologis", "Prudential Financial", "PTC",
+ "Public Service Enterprise Group", "Public Storage", "PulteGroup", "Qnity", "Qualcomm",
+ "Quanta Services", "Quest Diagnostics", "Ralph Lauren", "Raymond James", "Realty Income",
+ "Regency Centers", "Regeneron", "Regions Financial", "Republic Services", "ResMed", "Revvity",
+ "Robinhood", "Rollins", "Roper Technologies", "Ross Stores", "Royal Caribbean", "RTX",
+ "S&P Global", "Salesforce", "Sandisk", "SBA Communications", "Schlumberger", "Seagate Technology",
+ "Sempra", "Sherwin-Williams", "Simon Property Group", "Skyworks", "Smurfit Westrock", "Snap-on",
+ "Solventum", "Southern Company", "Southwest Airlines", "Stanley Black & Decker", "Starbucks",
+ "State Street", "Steel Dynamics", "Steris", "Stryker", "Supermicro", "Synchrony Financial",
+ "Synopsys", "Sysco", "T-Mobile", "T. Rowe Price", "Take-Two Interactive", "Tapestry",
+ "Targa Resources", "Target Corporation", "TE Connectivity", "Teledyne", "Teradyne", "Tesla",
+ "Texas Instruments", "Texas Pacific Land", "Textron", "The Hartford", "The Trade Desk",
+ "Thermo Fisher Scientific", "TJX", "TKO Group", "Tractor Supply", "Trane Technologies",
+ "TransDigm", "Travelers Companies", "Trimble", "Truist", "Tyler Technologies", "Tyson Foods",
+ "U.S. Bancorp", "Uber", "UDR", "Ulta Beauty", "Union Pacific", "United Airlines",
+ "United Parcel Service", "United Rentals", "UnitedHealth", "Universal Health Services", "UPS",
+ "Valero", "Ventas", "Veralto", "Verisign", "Verisk", "Vertex Pharmaceuticals", "Viatris",
+ "Vici Properties", "Visa", "Vistra", "Vulcan Materials", "W. R. Berkley", "W. W. Grainger",
+ "Wabtec", "Walmart", "Walt Disney", "Warner Bros. Discovery", "Waste Management",
+ "Waters Corporation", "WEC Energy", "Wells Fargo", "Welltower", "West Pharmaceutical Services",
+ "Western Digital", "Weyerhaeuser", "Williams Companies", "Williams-Sonoma",
+ "Willis Towers Watson", "Workday", "Wynn Resorts", "Xcel Energy", "Xylem", "Yum! Brands",
+ "Zimmer Biomet", "Zoetis"
+];
+
+/* Función auxiliar de límite de palabra para los nombres del diccionario */
+function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+
+/* Conjunto de caracteres que cuentan como "letra" para los límites del diccionario */
+const LB="\\wÁÉÍÓÚÜÑáéíóúüñ";
+
+/* Construye un único patrón alternado a partir de una lista de nombres,
+   ordenados de más largo a más corto para que gane la coincidencia más específica. */
+function buildDictRegex(names,flags){
+  if(!names.length)return null;
+  const sorted=names.slice().sort((a,b)=>b.length-a.length);
+  return new RegExp("(?<!["+LB+"])(?:"+sorted.map(escRe).join("|")+")(?!["+LB+"])",flags);
+}
+
+/* Definición de cada regla.  Cada match guarda {s,e,type,prio}. */
+function ruleDefs(customTerms,dictNames,intlNames){
+  const SP="[ \\t]";
+  const defs=[
+    {id:"persona",type:"persona",prio:3,regexes:[
+      // Con tratamiento  (Sr. García / don Juan Pérez)
+      new RegExp("(?:(?:Sr|Sra|Srta|Dr|Dra|Prof|Ldo|Lda|Mr|Mrs|Ms|Mx)\\.[ \\t]+|(?:Don|Do[ñn]a|Sir|Lord|don|do[ñn]a)[ \\t]+)"+
+        W+"(?:[ \\t]+(?:(?:de|del|la|y|van|von|der|den)[ \\t]+)?"+W+")*","g"),
+      // Sin tratamiento, dos o más palabras
+      new RegExp(W+"(?:[ \\t]+(?:(?:de|del|la|las|los|y|van|von|der|den|di|da)[ \\t]+)?"+W+")+","g")
+    ],post:function(t,s,e){
+      // recorta palabras iniciales que no son nombre
+      let words=t.split(/([ \t]+)/), idx=0;
+      while(idx<words.length){
+        const w=words[idx].replace(/\.$/,"");
+        if(w && STOP.has(w.toLowerCase())){
+          s+=words[idx].length+(words[idx+1]?words[idx+1].length:0);
+          idx+=2;
+        }else break;
+      }
+      const finalTxt=t.slice(t.length-(e-s));
+      const tail=finalTxt;
+      const caps=(tail.match(new RegExp(W,"g"))||[]).length;
+      const titled=/^(?:Sr|Sra|Srta|Dr|Dra|Prof|Ldo|Lda|Mr|Mrs|Ms|Mx)\.|^(?:Don|Do[ñn]a|Sir|Lord|don|do[ñn]a)\b/.test(tail);
+      if(caps<2 && !titled)return null;
+      return {s:s,e:e,t:tail};
+    }},
+
+    {id:"org",type:"org",prio:4,regexes:[
+      // Nombre + sufijo societario
+      new RegExp("(?:"+TOK+SP+"*,?"+SP+"+){0,5}(?:S\\.A\\.U\\.|S\\.A\\.|S\\.L\\.U\\.|S\\.L\\.|S\\.C\\.|"+
+        "Ltd\\.?|PLC|P\\.L\\.C\\.|LLP|LLC|Corp\\.?|Inc\\.?|GmbH|N\\.V\\.|S\\.p\\.A\\.|A\\.G\\.|AG)(?![A-Za-z])","g"),
+      // Palabras del sector con capitalizadas adyacentes
+      new RegExp("(?:"+W+SP+"+){1,4}(?:Group|Grupo|Holdings?|Fund|Management|Partners|Capital|"+
+        "Ventures|Investments?|Securities|Financial|Insurance|Bank|Banco|Advisors?|Asociación|Fundación)"+
+        "(?:"+SP+"+"+W+"){0,3}","g"),
+      // Palabras del sector como prefijo
+      new RegExp("\\b(?:Grupo|Group|Holding|Banco|Fundación|Asociación)"+SP+"+(?:"+W+SP+"*){1,4}","g")
+    ]},
+
+    {id:"sigla",type:"org",prio:5,regexes:[
+      new RegExp("\\b[A-Z](?:&?[A-Z]){1,4}\\b","g")
+    ],post:function(t,s,e){
+      if(SIGLA_SKIP.has(t))return null;
+      return {s:s,e:e,t:t};
+    }},
+
+    {id:"cifra",type:"cifra",prio:6,regexes:[
+      // Importe con símbolo de moneda delante
+      /[€$£](?:\s?\d[\d.,]*)/g,
+      // Cantidad seguida de moneda o unidad de magnitud (formas largas primero
+      // para que «euros» no se trunque en «eur»)
+      /\d[\d.,]*\s?(?:€|\$|£|millones|millardos|million|billion|euros|euro|d[óo]lares|d[óo]lar|libras|libra|EUR|USD|GBP|bn)(?![\wÁÉÍÓÚÜÑáéíóúüñ])/gi,
+      // Porcentajes
+      /\d[\d.,]*\s?%/g,
+      // Cifras con separador de millares (punto o coma) y decimales opcionales
+      /\b\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?\b/g,
+      // Decimales con coma o punto sin separador de millares  (250,50 · 3.14)
+      /\b\d+[.,]\d+\b/g,
+      // Enteros de cuatro o más dígitos sin separador  (15000 · 120000)
+      /\b\d{4,}\b/g
+    ]},
+
+    {id:"fecha",type:"fecha",prio:7,regexes:[
+      /\b\d{1,2}\s+de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|se[pt]?tiembre|septiembre|octubre|noviembre|diciembre)(?:\s+de\s+\d{2,4})?/gi,
+      /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/gi,
+      /\b\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December),?\s+\d{4}/gi,
+      /\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/g,
+      /\b(?:19|20)\d{2}\b/g
+    ]},
+
+    {id:"contacto",type:"contacto",prio:8,regexes:[
+      /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/g,
+      /(?:\+|00)\d{1,3}[\s.\-]?(?:\(?\d{1,4}\)?[\s.\-]?){2,5}\d{2,4}/g,
+      /\b(?:\+34[\s.\-]?)?[6-9]\d{2}[\s.\-]?\d{2,3}[\s.\-]?\d{2,3}[\s.\-]?\d{0,2}\b/g
+    ]},
+
+    {id:"url",type:"url",prio:7,regexes:[
+      /\b(?:https?:\/\/|www\.)[^\s<>"']+/gi,
+      /\b[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9\-]+)*\.(?:com|org|net|io|es|eu|uk|gov|edu|info|co|dev|app|fr|de|it|pt|nl|ch)\b(?:\/[^\s<>"']*)?/gi
+    ],post:function(t,s,e){
+      const m=t.match(/[.,;:)\]!?"']+$/);
+      if(m)e-=m[0].length,t=t.slice(0,t.length-m[0].length);
+      if(!t)return null;
+      return {s:s,e:e,t:t};
+    }},
+
+    {id:"lugar",type:"lugar",prio:2,regexes:[
+      new RegExp("\\b(?:"+PLACES.slice().sort((a,b)=>b.length-a.length).map(escRe).join("|")+")\\b","g")
+    ]}
+  ];
+
+  // Diccionario de empresas conocidas (lista interna + nombres cargados por el usuario).
+  // Coincidencia sensible a mayúsculas para reducir falsos positivos.
+  const dictRe=buildDictRegex(dictNames,"g");
+  if(dictRe){
+    defs.splice(4,0,{id:"dict",type:"org",prio:6,regexes:[dictRe]});
+  }
+
+  // Cotizadas internacionales (S&P 500 / DJIA / Nasdaq / Fortune 500).
+  // Categoría separada con toggle propio: puede desactivarse en textos en inglés
+  // donde nombres-palabra (Target, Visa, Oracle…) generen falsos positivos.
+  const intlRe=buildDictRegex(intlNames,"g");
+  if(intlRe){
+    defs.splice(4,0,{id:"intl",type:"org",prio:6,regexes:[intlRe]});
+  }
+
+  if(customTerms.length){
+    defs.push({id:"custom",type:"custom",prio:9,regexes:[
+      buildDictRegex(customTerms,"gi")
+    ]});
+  }
+  return defs;
+}
+
+const TAG_TEXT={persona:"[PERSONA]",org:"[ORG]",cifra:"[CIFRA]",lugar:"[LUGAR]",
+  fecha:"[FECHA]",contacto:"[CONTACTO]",url:"[URL]",custom:"[TÉRMINO]"};
+
+function htmlEscape(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* Recorre las reglas activas sobre un texto y devuelve la lista de
+   coincidencias aceptadas {s,e,type}, ordenada y sin solapamientos.
+   Reutilizada tanto por la vista previa como por el reescritor de DOCX. */
+function computeMatches(text,defs,enabled){
+  let matches=[];
+  for(const rule of defs){
+    if(rule.id!=="custom" && !enabled[rule.id])continue;
+    for(const re of rule.regexes){
+      re.lastIndex=0;
+      let m;
+      while((m=re.exec(text))!==null){
+        if(m[0].length===0){re.lastIndex++;continue;}
+        let s=m.index,e=s+m[0].length;
+        if(rule.post){
+          const pf=rule.post(m[0],s,e);
+          if(!pf)continue;
+          s=pf.s;e=pf.e;
+        }
+        if(e>s)matches.push({s:s,e:e,type:rule.type,prio:rule.prio});
+      }
+    }
+  }
+  // ordenar: por inicio; a igual inicio, mayor prioridad; luego mayor longitud
+  matches.sort(function(a,b){
+    return a.s-b.s || b.prio-a.prio || (b.e-b.s)-(a.e-a.s);
+  });
+  // selección codiciosa sin solapamientos
+  const accepted=[];let lastEnd=-1;
+  for(const mm of matches){
+    if(mm.s>=lastEnd){accepted.push(mm);lastEnd=mm.e;}
+  }
+  return accepted;
+}
+
+/* Prefijos ASCII para los marcadores reversibles (sin tildes, más robustos
+   frente a motores de traducción). */
+const REV_PREFIX={persona:"PERSONA",org:"ORG",cifra:"CIFRA",lugar:"LUGAR",
+  fecha:"FECHA",contacto:"CONTACTO",url:"URL",custom:"TERMINO"};
+
+function anonymize(text,enabled,customTerms,dictNames,intlNames,reversible){
+  if(!text)return {html:"",plain:"",total:0,counts:{},mapping:{}};
+  const defs=ruleDefs(customTerms,dictNames,intlNames);
+  const accepted=computeMatches(text,defs,enabled);
+
+  // Modo reversible: cada entidad distinta recibe un marcador numerado único
+  // y estable ([ORG_1], [PERSONA_2]…). Las repeticiones comparten marcador.
+  const mapping={};const idByKey={};const counters={};
+  function placeholderFor(type,original){
+    const key=type+"\u0000"+original;
+    if(idByKey[key])return idByKey[key];
+    counters[type]=(counters[type]||0)+1;
+    const id=(REV_PREFIX[type]||"ENT")+"_"+counters[type];
+    idByKey[key]=id;mapping[id]=original;
+    return id;
+  }
+
+  let html="",plain="",cursor=0;
+  const counts={};
+  for(const mm of accepted){
+    html+=htmlEscape(text.slice(cursor,mm.s));plain+=text.slice(cursor,mm.s);
+    let tag;
+    if(reversible){
+      const original=text.slice(mm.s,mm.e);
+      tag="["+placeholderFor(mm.type,original)+"]";
+    }else{
+      tag=TAG_TEXT[mm.type];
+    }
+    html+='<span class="tg tg-'+mm.type+'">'+htmlEscape(tag)+"</span>";
+    plain+=tag;
+    counts[mm.type]=(counts[mm.type]||0)+1;
+    cursor=mm.e;
+  }
+  html+=htmlEscape(text.slice(cursor));
+  plain+=text.slice(cursor);
+  return {html:html,plain:plain,total:accepted.length,counts:counts,mapping:mapping};
+}
+
+/* Serializa el mapa de restauración en formato legible y editable. */
+function mappingToText(mapping){
+  return Object.keys(mapping).map(function(k){return k+" = "+mapping[k];}).join("\n");
+}
+
+/* Restaura las entidades: sustituye cada marcador del texto traducido por su
+   valor original según el mapa. Tolerante a variaciones del marcador que algunos
+   traductores introducen ([ ORG_1 ], [org-1], etc.). */
+function parseMapping(mapText){
+  const map={};
+  mapText.split(/\r?\n/).forEach(function(line){
+    const i=line.indexOf("=");
+    if(i<0)return;
+    const k=line.slice(0,i).trim().toUpperCase().replace(/[\s-]+/g,"_");
+    const v=line.slice(i+1).trim();
+    if(k)map[k]=v;
+  });
+  return map;
+}
+function restoreEntities(translated,mapText){
+  const map=parseMapping(mapText);
+  let missing=0,replaced=0;
+  const out=translated.replace(/\[\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)[ _-]?(\d+)\s*\]/g,
+    function(whole,type,num){
+      const key=type.toUpperCase().replace(/[\s-]+/g,"_")+"_"+num;
+      if(map[key]!==undefined){replaced++;return map[key];}
+      missing++;return whole;
+    });
+  return {text:out,replaced:replaced,missing:missing};
+}
+
+/* =====================================================================
+   4. INTERFAZ
+   ===================================================================== */
+const RULE_META=[
+  {id:"persona",name:"Personas",desc:"Nombres propios, con o sin título",color:"--c-persona"},
+  {id:"org",name:"Organizaciones",desc:"Empresas con sufijos ES/EN",color:"--c-org"},
+  {id:"dict",name:"Empresas conocidas",desc:"Lista interna + lista cargada",color:"--c-org"},
+  {id:"intl",name:"Cotizadas internacionales",desc:"S&P 500, DJIA, Nasdaq, Fortune 500",color:"--c-org"},
+  {id:"sigla",name:"Siglas",desc:"Acrónimos de 2-5 mayúsculas",color:"--c-org"},
+  {id:"cifra",name:"Cifras",desc:"Importes, porcentajes, decimales",color:"--c-cifra"},
+  {id:"lugar",name:"Lugares",desc:"Ciudades y regiones",color:"--c-lugar"},
+  {id:"fecha",name:"Fechas",desc:"Largas, numéricas y años",color:"--c-fecha"},
+  {id:"contacto",name:"Contacto",desc:"Emails y teléfonos",color:"--c-contacto"},
+  {id:"url",name:"URLs",desc:"Direcciones web y dominios",color:"--c-url"}
+];
+const LEGEND_META=[
+  {type:"persona",rule:"persona",name:"Persona",color:"--c-persona"},
+  {type:"org",rule:"org",name:"Organización / Sigla",color:"--c-org"},
+  {type:"cifra",rule:"cifra",name:"Cifra",color:"--c-cifra"},
+  {type:"lugar",rule:"lugar",name:"Lugar",color:"--c-lugar"},
+  {type:"fecha",rule:"fecha",name:"Fecha",color:"--c-fecha"},
+  {type:"contacto",rule:"contacto",name:"Contacto",color:"--c-contacto"},
+  {type:"url",rule:"url",name:"URL",color:"--c-url"},
+  {type:"custom",rule:"custom",name:"Término",color:"--c-custom"}
+];
+
+const $=function(id){return document.getElementById(id);};
+/* docx: zip y texto del .docx original cargado (para preservar formato).
+   dictExtra: nombres de empresa cargados desde un archivo de lista. */
+const state={fileName:null,plain:"",docx:null,docxText:"",dictExtra:[],mapping:{}};
+
+/* ---- construir toggles de reglas ---- */
+(function buildRules(){
+  const box=$("rules");
+  RULE_META.forEach(function(r){
+    const lbl=document.createElement("label");
+    lbl.className="rule";
+    lbl.innerHTML=
+      '<span class="tagdot" style="background:var('+r.color+')"></span>'+
+      '<span><span class="rl-name">'+r.name+'</span>'+
+      '<span class="rl-desc">'+r.desc+'</span></span>'+
+      '<span class="switch"><input type="checkbox" id="tg-'+r.id+'" checked>'+
+      '<span class="track"></span><span class="thumb"></span></span>';
+    box.appendChild(lbl);
+  });
+})();
+
+/* ---- construir leyenda ---- */
+(function buildLegend(){
+  const box=$("legend");
+  LEGEND_META.forEach(function(l){
+    const el=document.createElement("span");
+    el.className="lg";el.id="lg-"+l.type;
+    el.innerHTML='<span class="sw" style="background:var('+l.color+')"></span>'+
+      l.name+' <span class="ct" id="ct-'+l.type+'">0</span>';
+    box.appendChild(el);
+  });
+})();
+
+/* ---- tema ---- */
+$("themeBtn").addEventListener("click",function(){
+  const dark=document.documentElement.getAttribute("data-theme")==="dark";
+  document.documentElement.setAttribute("data-theme",dark?"light":"dark");
+  $("iconSun").style.display=dark?"":"none";
+  $("iconMoon").style.display=dark?"none":"";
+});
+
+/* ---- pestañas ---- */
+document.querySelectorAll(".tab").forEach(function(t){
+  t.addEventListener("click",function(){
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    $("pane-"+t.dataset.pane).classList.add("active");
+  });
+});
+
+/* ---- utilidades UI ---- */
+function debounce(fn,ms){let t;return function(){clearTimeout(t);t=setTimeout(fn,ms);};}
+function toast(msg){
+  const el=$("toast");el.textContent=msg;el.classList.add("show");
+  setTimeout(function(){el.classList.remove("show");},2000);
+}
+function showErr(msg){
+  const el=$("fileErr");
+  if(msg){el.textContent=msg;el.classList.add("show");}
+  else el.classList.remove("show");
+}
+
+/* ---- procesado principal ---- */
+function currentEnabled(){
+  const enabled={};
+  RULE_META.forEach(function(r){enabled[r.id]=$("tg-"+r.id).checked;});
+  return enabled;
+}
+function currentCustom(){
+  return $("custom").value.split(",").map(s=>s.trim()).filter(Boolean);
+}
+function currentDict(){
+  return KNOWN_ORGS.concat(state.dictExtra);
+}
+function process(){
+  const text=$("input").value;
+  const enabled=currentEnabled();
+  const custom=currentCustom();
+
+  const reversible=$("tg-rev").checked;
+  const res=anonymize(text,enabled,custom,currentDict(),INTL_ORGS,reversible);
+  state.plain=res.plain;
+  state.mapping=res.mapping;
+  renderMap(reversible,res.mapping);
+  $("revLabel").classList.toggle("on",reversible);
+
+  const out=$("output");
+  if(!text.trim()){
+    out.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+      'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+
+      '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'+
+      '<path d="M14 2v6h6M9 13h6M9 17h4"/></svg>'+
+      '<div>El texto anonimizado aparecerá aquí.</div></div>';
+  }else{
+    out.innerHTML=res.html||htmlEscape(text);
+  }
+
+  $("count").textContent=res.total;
+  LEGEND_META.forEach(function(l){
+    $("ct-"+l.type).textContent=res.counts[l.type]||0;
+    const lg=$("lg-"+l.type);
+    let active=true;
+    if(l.rule==="custom")active=custom.length>0;
+    else if(l.rule==="org")active=$("tg-org").checked||$("tg-sigla").checked||$("tg-dict").checked||$("tg-intl").checked;
+    else active=$("tg-"+l.rule).checked;
+    lg.classList.toggle("off",!active);
+  });
+
+  const has=!!text.trim();
+  $("copyBtn").disabled=!has;
+  $("txtBtn").disabled=!has;
+  $("docxBtn").disabled=!has;
+}
+const processDebounced=debounce(process,250);
+
+$("input").addEventListener("input",processDebounced);
+$("custom").addEventListener("input",processDebounced);
+RULE_META.forEach(function(r){
+  $("tg-"+r.id).addEventListener("change",process);
+});
+$("tg-rev").addEventListener("change",process);
+
+/* ---- mapa de restauración y rehidratado ---- */
+function copyText(t,msg){
+  function done(){toast(msg||"Copiado");}
+  function fb(){
+    const ta=document.createElement("textarea");
+    ta.value=t;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{document.execCommand("copy");}catch(e){}
+    document.body.removeChild(ta);done();
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(t).then(done,fb);
+  else fb();
+}
+function renderMap(reversible,mapping){
+  const wrap=$("mapwrap");
+  const keys=Object.keys(mapping||{});
+  if(reversible&&keys.length){
+    const txt=mappingToText(mapping);
+    $("mapBox").value=txt;
+    $("restoreMap").value=txt;   // se reutiliza al restaurar tras la traducción
+    wrap.style.display="block";
+  }else{
+    $("mapBox").value="";
+    wrap.style.display="none";
+  }
+}
+$("mapCopy").addEventListener("click",function(){copyText($("mapBox").value,"Mapa copiado");});
+$("mapTxt").addEventListener("click",function(){
+  const blob=new Blob([$("mapBox").value],{type:"text/plain;charset=utf-8"});
+  download(baseName()+"_MAPA.txt",blob);toast("Mapa descargado");
+});
+$("restoreBtn").addEventListener("click",function(){
+  const translated=$("transBox").value;
+  if(!translated.trim()){toast("Pega primero el texto traducido");return;}
+  const r=restoreEntities(translated,$("restoreMap").value);
+  const out=$("restoreOut");
+  if(r.text.trim())out.textContent=r.text;
+  else out.innerHTML='<div class="empty" style="padding:36px 20px"><div>Sin contenido.</div></div>';
+  state.restored=r.text;
+  $("restoreCopy").disabled=!r.text;
+  let info=r.replaced+(r.replaced===1?" entidad restaurada":" entidades restauradas");
+  if(r.missing)info+=" · "+r.missing+" marcador(es) sin valor en el mapa";
+  $("restoreInfo").textContent=info;
+});
+$("restoreCopy").addEventListener("click",function(){copyText(state.restored||"","Resultado copiado");});
+
+/* ---- carga del documento de entrada ---- */
+function handleFile(file){
+  showErr("");
+  const name=file.name||"documento";
+  const lower=name.toLowerCase();
+  if(lower.endsWith(".txt")){
+    const reader=new FileReader();
+    reader.onload=function(){
+      $("input").value=reader.result;
+      state.fileName=name;state.docx=null;state.docxText="";
+      $("fileName").textContent=name;
+      $("fileChip").classList.add("show");
+      switchToPaste();process();
+    };
+    reader.onerror=function(){showErr("No se pudo leer el archivo .txt");};
+    reader.readAsText(file,"utf-8");
+  }else if(lower.endsWith(".docx")){
+    const reader=new FileReader();
+    reader.onload=function(){
+      try{
+        const parsed=parseDocx(reader.result);
+        $("input").value=parsed.text;
+        state.fileName=name;
+        state.docx=parsed.zip;          // zip original, para preservar el formato
+        state.docxText=parsed.text;     // texto extraído de referencia
+        $("fileName").textContent=name;
+        $("fileChip").classList.add("show");
+        switchToPaste();process();
+      }catch(err){
+        showErr("Error al leer el DOCX: "+err.message);
+      }
+    };
+    reader.onerror=function(){showErr("No se pudo leer el archivo .docx");};
+    reader.readAsArrayBuffer(file);
+  }else{
+    showErr("Formato no admitido. Use .docx o .txt");
+  }
+}
+function switchToPaste(){
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".pane").forEach(x=>x.classList.remove("active"));
+  document.querySelector('.tab[data-pane="paste"]').classList.add("active");
+  $("pane-paste").classList.add("active");
+}
+
+$("drop").addEventListener("click",function(){$("fileInput").click();});
+$("fileInput").addEventListener("change",function(e){
+  if(e.target.files&&e.target.files[0])handleFile(e.target.files[0]);
+});
+["dragenter","dragover"].forEach(function(ev){
+  $("drop").addEventListener(ev,function(e){
+    e.preventDefault();e.stopPropagation();$("drop").classList.add("over");
+  });
+});
+["dragleave","drop"].forEach(function(ev){
+  $("drop").addEventListener(ev,function(e){
+    e.preventDefault();e.stopPropagation();$("drop").classList.remove("over");
+  });
+});
+$("drop").addEventListener("drop",function(e){
+  const f=e.dataTransfer.files;
+  if(f&&f[0])handleFile(f[0]);
+});
+// también admitir soltar el archivo en cualquier punto sin abrir el navegador
+window.addEventListener("dragover",function(e){e.preventDefault();});
+window.addEventListener("drop",function(e){e.preventDefault();});
+
+$("fileClear").addEventListener("click",function(){
+  state.fileName=null;state.docx=null;state.docxText="";
+  $("fileName").textContent="";
+  $("fileChip").classList.remove("show");
+  $("fileInput").value="";
+  showErr("");
+});
+
+/* ---- carga de una lista propia de nombres de empresa ---- */
+function parseNameList(raw){
+  return raw.split(/[\r\n;,\u2013\u2014]+|\s-\s/)
+            .map(s=>s.trim())
+            .filter(function(s){return s.length>=2 && !/^[a-z]{1,2}$/.test(s);});
+}
+function refreshDictChip(){
+  const n=state.dictExtra.length;
+  if(n){
+    $("dictName").textContent=n+(n===1?" nombre cargado":" nombres cargados");
+    $("dictChip").classList.add("show");
+  }else{
+    $("dictChip").classList.remove("show");
+  }
+}
+function handleNameList(file){
+  const lower=(file.name||"").toLowerCase();
+  if(!lower.endsWith(".txt")&&!lower.endsWith(".csv")){
+    toast("La lista debe ser un archivo .txt o .csv");return;
+  }
+  const reader=new FileReader();
+  reader.onload=function(){
+    const names=parseNameList(String(reader.result));
+    // fusionar sin duplicados (sensible a mayúsculas)
+    const seen=new Set(state.dictExtra),added=[];
+    names.forEach(function(x){if(!seen.has(x)){seen.add(x);added.push(x);}});
+    state.dictExtra=state.dictExtra.concat(added);
+    refreshDictChip();
+    toast(added.length+" nombres añadidos a la lista");
+    process();
+  };
+  reader.onerror=function(){toast("No se pudo leer la lista");};
+  reader.readAsText(file,"utf-8");
+}
+$("dictPick").addEventListener("click",function(){$("dictFileInput").click();});
+$("dictFileInput").addEventListener("change",function(e){
+  if(e.target.files&&e.target.files[0])handleNameList(e.target.files[0]);
+  e.target.value="";
+});
+$("dictClear").addEventListener("click",function(){
+  state.dictExtra=[];refreshDictChip();process();
+});
+
+/* ---- limpiar todo ---- */
+$("clearBtn").addEventListener("click",function(){
+  $("input").value="";$("custom").value="";
+  state.fileName=null;state.plain="";state.docx=null;state.docxText="";
+  $("fileName").textContent="";
+  $("fileChip").classList.remove("show");
+  $("fileInput").value="";
+  showErr("");
+  process();
+});
+
+/* ---- copiar ---- */
+$("copyBtn").addEventListener("click",function(){
+  const t=state.plain;
+  function done(){toast("Copiado al portapapeles");}
+  function fallback(){
+    const ta=document.createElement("textarea");
+    ta.value=t;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{document.execCommand("copy");}catch(e){}
+    document.body.removeChild(ta);done();
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done,fallback);
+  }else fallback();
+});
+
+/* ---- descargas ---- */
+function baseName(){
+  if(state.fileName)return state.fileName.replace(/\.[^.]+$/,"");
+  return "documento";
+}
+function download(filename,blob){
+  const a=document.createElement("a");
+  const url=URL.createObjectURL(blob);
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},120);
+}
+$("txtBtn").addEventListener("click",function(){
+  const blob=new Blob([state.plain],{type:"text/plain;charset=utf-8"});
+  download(baseName()+"_ANON.txt",blob);
+  toast("Descargado .TXT");
+});
+$("docxBtn").addEventListener("click",function(){
+  try{
+    let bytes;
+    const preservaFormato=state.docx && $("input").value===state.docxText;
+    if(preservaFormato){
+      // Se reescribe el .docx original: se conservan estilos, fuentes,
+      // tablas, imágenes, encabezados y pies; solo cambia el texto.
+      const defs=ruleDefs(currentCustom(),currentDict(),INTL_ORGS);
+      const enabled=currentEnabled();
+      const matcher=function(t){return computeMatches(t,defs,enabled);};
+      bytes=anonymizeDocxFile(state.docx,matcher);
+    }else{
+      // Sin documento original, o con el texto editado a mano:
+      // se genera un .docx simple a partir del texto plano.
+      bytes=textToDocx(state.plain);
+      if(state.docx)toast("Texto editado: se genera un .DOCX sin el formato original");
+    }
+    const blob=new Blob([bytes],
+      {type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+    download(baseName()+"_ANON.docx",blob);
+    if(!state.docx||!preservaFormato){/* toast ya mostrado o no aplica */}
+    else toast("Descargado .DOCX con el formato original");
+  }catch(err){
+    toast("Error al generar el DOCX");
+  }
+});
+
+/* estado inicial */
+process();
+</script>
+</body>
+</html>
