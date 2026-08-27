@@ -942,9 +942,13 @@ convertBtn.onclick=async()=>{
   results.classList.add('show');
   if(downloadWorks===null)downloadWorks=testDownload();
   dlNote.style.display='block';
-  dlNote.innerHTML=anyBin
-    ? '<b>Descargas.</b> Si abriste esta herramienta como archivo local (doble clic), los botones de descarga guardan directamente. Si la ves incrustada en una vista previa de Claude o ChatGPT, el navegador puede bloquear la descarga de archivos binarios (Word/Excel/PDF) por seguridad: usa «Copiar» para los formatos de texto, o abre el .html localmente para guardar todo.'
-    : '<b>Consejo.</b> Usa «Copiar» para llevar el resultado a otra app, o «Descargar» para guardarlo. Todo se genera en tu navegador.';
+  getDownloads().then(ns=>{
+    dlNote.innerHTML = ns
+      ? '<b>Descargas dentro de Claude.</b> Al pulsar «Descargar» verás una confirmación para guardar. Texto, Markdown y JSON siempre; Word, PDF, CSV y HTML según lo permita tu vista. <b>Excel (.xlsx)</b> no se puede guardar aquí: abre el archivo <b>.html en tu equipo</b> (doble clic) para guardarlo, o usa «Copiar».'
+      : (anyBin
+        ? '<b>Descargas.</b> Estás usando el archivo local: los botones guardan directamente en tu equipo. Todo se genera en tu navegador, sin conexión.'
+        : '<b>Consejo.</b> Usa «Copiar» para llevar el resultado a otra app, o «Descargar» para guardarlo. Todo se genera en tu navegador.');
+  });
   setStatus(`Convertido a ${order.length} formato${order.length===1?'':'s'}.`);
   convertBtn.disabled=false;
 };
@@ -967,7 +971,17 @@ function addResultCard(f,payload,base,opt){
   }else{
     if(isText){const cp=document.createElement('button');cp.className='mini';cp.innerHTML=copySvg()+'Copiar';cp.onclick=()=>{navigator.clipboard.writeText(payload).then(()=>{cp.innerHTML=checkSvg()+'Copiado';cp.classList.add('done');setTimeout(()=>{cp.innerHTML=copySvg()+'Copiar';cp.classList.remove('done');},1600);}).catch(()=>{cp.textContent='No permitido';});};btns.appendChild(cp);}
     const dl=document.createElement('button');dl.className='mini';dl.innerHTML=dlSvg()+'Descargar';
-    dl.onclick=()=>download(payload,filename,f.mime);btns.appendChild(dl);
+    dl.onclick=async()=>{
+      dl.disabled=true;const orig=dl.innerHTML;dl.innerHTML=dlSvg()+'Guardando…';
+      const r=await download(payload,filename,f.mime);
+      if(r.ok){dl.innerHTML=checkSvg()+'Guardado';dl.classList.add('done');setTimeout(()=>{dl.innerHTML=orig;dl.classList.remove('done');dl.disabled=false;},1800);}
+      else{
+        dl.disabled=false;
+        if(r.code==='declined'||r.code==='rate_limited'){dl.innerHTML=orig;}
+        else if(r.code==='extension_not_enabled'||r.code==='rejected_extension'){dl.innerHTML=dlSvg()+'Ábrelo en local';dl.title='Este formato ('+f.ext+') no se puede guardar dentro de Claude; abre el archivo .html en tu equipo. Usa «Copiar» si es texto.';}
+        else{dl.innerHTML=dlSvg()+'No disponible';dl.title='Guardado no disponible en esta vista. Abre el .html en local.';}
+      }
+    };btns.appendChild(dl);
   }
   card.appendChild(head);
   if(f.id==='pdf'){
@@ -978,9 +992,26 @@ function addResultCard(f,payload,base,opt){
   resList.appendChild(card);
 }
 function addErrorCard(f,msg){const card=document.createElement('div');card.className='rescard';card.innerHTML=`<div class="rescard-h"><div class="ic" style="color:var(--danger)">!</div><div><div class="t">${f.label}</div><div class="m" style="color:var(--danger)">No se pudo generar: ${escHtml(msg)}</div></div></div>`;resList.appendChild(card);}
-function download(data,name,mime){
+// downloads: usa la capacidad de Claude cuando existe (Artifact), si no descarga por blob (archivo local)
+let _dlNs=undefined;
+async function getDownloads(){
+  if(_dlNs!==undefined)return _dlNs;
+  try{ _dlNs=(window.claude&&typeof window.claude.use==='function')?await window.claude.use('downloads'):null; }
+  catch(e){ _dlNs=null; }
+  return _dlNs;
+}
+function blobDownload(data,name,mime){
   const blob=data instanceof Uint8Array?new Blob([data],{type:mime}):new Blob([data],{type:mime+';charset=utf-8'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1500);
+}
+async function download(data,name,mime){
+  const ns=await getDownloads();
+  if(ns){
+    try{ await ns.save({filename:name,data}); return {ok:true}; }
+    catch(err){ return {ok:false,code:(err&&err.code)||'error'}; }
+  }
+  blobDownload(data,name,mime);
+  return {ok:true};
 }
 function printHtml(html){
   const w=window.open('','_blank');
