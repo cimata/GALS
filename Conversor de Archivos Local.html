@@ -720,7 +720,15 @@ async function readPdfStructured(bytes,onProgress){
       if(!L){L={y,items:[],hs:[]};lines.push(L);}
       L.items.push({str:it.str,x,w:it.width||0,h,bold:fi.bold,italic:fi.italic});L.hs.push(h);
     });
-    lines.forEach(L=>{L.items.sort((a,b)=>a.x-b.x);L.h=median(L.hs);L.x0=L.items[0]?L.items[0].x:0;heights.push(L.h);});
+    lines.forEach(L=>{
+      L.items.sort((a,b)=>a.x-b.x);L.h=median(L.hs);
+      L.x0=L.items[0]?L.items[0].x:0;
+      const last=L.items[L.items.length-1];L.x1=last?last.x+last.w:L.x0;
+      const chars=L.items.reduce((a,r)=>a+r.str.length,0)||1;
+      L.boldFrac=L.items.reduce((a,r)=>a+(r.bold?r.str.length:0),0)/chars;
+      L.pageW=vp.width;L.pageH=vp.height;L.pn=pn;
+      heights.push(L.h);
+    });
     lines.sort((a,b)=>b.y-a.y);
     if(pn>1)allLines.push({pageBreak:true});
     lines.forEach(L=>allLines.push(L));
@@ -728,7 +736,27 @@ async function readPdfStructured(bytes,onProgress){
     if(onProgress)onProgress(pn,doc.numPages);
   }
   const bodyH=modeRound(heights)||median(heights)||10;
-  return linesToBlocks(allLines,bodyH);
+  // eliminar encabezados/pies repetidos y números de página
+  const norm=s=>s.replace(/\d+/g,'#').replace(/\s+/g,' ').trim().toLowerCase();
+  const zoneKey={};
+  allLines.forEach(L=>{
+    if(L.pageBreak||!L.items)return;
+    const inHF=L.y>L.pageH*0.90||L.y<L.pageH*0.10;
+    if(!inHF)return;
+    const txt=L.items.map(r=>r.str).join('').trim();
+    const k=norm(txt); if(k)zoneKey[k]=(zoneKey[k]||0)+1;
+  });
+  const clean=allLines.filter(L=>{
+    if(L.pageBreak||!L.items)return true;
+    const inHF=L.y>L.pageH*0.90||L.y<L.pageH*0.10;
+    if(!inHF)return true;
+    const txt=L.items.map(r=>r.str).join('').trim();
+    if(/^\d{1,4}$/.test(txt))return false;              // número de página
+    if(txt.length<=3)return false;                        // "EN", marcas cortas
+    if(zoneKey[norm(txt)]>=3)return false;               // encabezado/pie recurrente
+    return true;
+  });
+  return linesToBlocks(clean,bodyH);
 }
 function lineToInline(L,bodyH){
   let out='',cur='',b=false,it=false,lastEnd=null;
@@ -744,23 +772,38 @@ function lineToInline(L,bodyH){
 function linesToBlocks(lines,bodyH){
   const blocks=[];let para=null,prevY=null,prevPage=false;
   const flushPara=()=>{if(para&&para.trim())blocks.push({t:'p',text:para.trim()});para=null;};
-  // margen izquierdo dominante de los párrafos de cuerpo
-  const bodyX=lines.filter(L=>!L.pageBreak&&L.items&&L.items.length&&L.h<bodyH*1.35).map(L=>L.x0);
-  const docLeft=bodyX.length?modeRound(bodyX):0;
+  const rawText=L=>L.items.map(r=>r.str).join('');
   lines.forEach(L=>{
     if(L.pageBreak){prevPage=true;return;}
     if(!L.items.length)return;
-    const text=lineToInline(L,bodyH);if(!text)return;
-    const bigGap=prevY!=null&&(prevY-L.y)>bodyH*1.7;
-    const isHeading=L.h>=bodyH*1.35&&!/[.:;]$/.test(text)&&text.length<120;
-    const level=L.h>=bodyH*1.9?1:L.h>=bodyH*1.5?2:3;
-    const textBullet=/^\s*[•·▪◦‣∙*]\s+/.test(L.items[0].str)?'ul':/^\s*[-–—]\s+/.test(L.items[0].str)?'ul':/^\s*\d+[.)]\s+/.test(L.items[0].str)?'ol':null;
-    const indented=!isHeading&&L.x0>docLeft+bodyH*0.9;
-    if(isHeading){flushPara();blocks.push({t:'h',level,text:text.replace(/^[*_`]+|[*_`]+$/g,'')});}
-    else if(textBullet||indented){
+    let text=lineToInline(L,bodyH);if(!text)return;
+    const plain=rawText(L).trim();
+    const bigGap=prevY!=null&&(prevY-L.y)>bodyH*1.6;
+    // índice: línea con puntos de relleno y nº de página al final → texto tabulado, no título
+    const isToc=/\.{4,}\s*\d+\s*$/.test(plain)||/…\s*\d+\s*$/.test(plain);
+    if(isToc){
+      flushPara();
+      const clean=text.replace(/[.…]{2,}/g,' ').replace(/\s+(\d+)\s*$/,' $1').replace(/^[*_]+|[*_]+$/g,'').trim();
+      blocks.push({t:'p',text:clean});prevY=L.y;prevPage=false;return;
+    }
+    // viñetas / listas reales, solo por marcador textual
+    const textBullet=/^\s*[•·▪◦‣∙]\s+/.test(plain)?'ul':/^\s*[-–—]\s+\S/.test(plain)?'ul':/^\s*\(?[a-z]\)\s+/.test(plain)?'ul':/^\s*\d+[.)]\s+/.test(plain)?'ol':null;
+    // títulos: por tamaño, o numerados en negrita (1., 2.3., ...)
+    const sizeHead=L.h>=bodyH*1.3&&text.length<140&&!/[.:;,]$/.test(plain);
+    const numHead=/^(\d+(?:\.\d+)*)\.?\s+\S/.test(plain)&&L.boldFrac>0.5&&plain.length<160&&!textBullet;
+    const allCapsHead=/^[A-ZÁÉÍÓÚÑ0-9 ,'&()\/-]{4,80}$/.test(plain)&&L.boldFrac>0.5&&plain.length<80&&/[A-Z]{3,}/.test(plain);
+    if(sizeHead||numHead||allCapsHead){
+      flushPara();
+      let level=3;
+      if(numHead){const m=/^(\d+(?:\.\d+)*)/.exec(plain);level=Math.min((m[1].split('.').length),4);}
+      else if(L.h>=bodyH*1.9)level=1; else if(L.h>=bodyH*1.5)level=2; else level=allCapsHead?2:3;
+      blocks.push({t:'h',level,text:text.replace(/^[*_`]+|[*_`]+$/g,'').trim()});
+      prevY=L.y;prevPage=false;return;
+    }
+    if(textBullet){
       flushPara();
       const type=textBullet==='ol'?'ol':'ul';
-      const item=text.replace(/^\s*[•·▪◦‣∙*]\s+/,'').replace(/^\s*[-–—]\s+/,'').replace(/^\s*\d+[.)]\s+/,'');
+      const item=text.replace(/^\s*[•·▪◦‣∙]\s+/,'').replace(/^\s*[-–—]\s+/,'').replace(/^\s*\(?[a-z]\)\s+/,'').replace(/^\s*\d+[.)]\s+/,'');
       const last=blocks[blocks.length-1];
       if(last&&last.t===type){last.items.push(item);}
       else blocks.push({t:type,items:[item]});
