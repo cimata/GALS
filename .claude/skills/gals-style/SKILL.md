@@ -1,5 +1,5 @@
 ---
-name: writing-rules
+name: gals-style
 description: House writing and editing rules for Grupo Albión's bilingual (English/Spanish) financial, energy, legal and economic reporting and corporate communications. Use when writing, editing, proofreading or translating UK-English business copy — news, corporate results, press releases, corporate email — or when applying GALS style, voice, spelling, capitalisation, currency and ES→EN translation conventions.
 ---
 
