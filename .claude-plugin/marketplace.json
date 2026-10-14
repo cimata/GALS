@@ -1,0 +1,17 @@
+{
+  "name": "gals",
+  "owner": {
+    "name": "GALS"
+  },
+  "metadata": {
+    "description": "Plugins internos de GALS para Claude."
+  },
+  "plugins": [
+    {
+      "name": "ga-fact-check-desk",
+      "source": "./plugins/ga-fact-check-desk",
+      "description": "Fact-checking de afirmaciones objetivas con metodología y veredictos cerrados (Grupo Albión).",
+      "version": "0.6.0"
+    }
+  ]
+}

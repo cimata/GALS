@@ -1,0 +1,9 @@
+{
+  "name": "ga-fact-check-desk",
+  "version": "0.6.0",
+  "description": "Verifica afirmaciones objetivas con pruebas fiables y contrastadas: borradores, cifras, citas, fechas, clasificaciones, enlaces y comunicaciones. No es adecuado para opiniones, ficción ni trabajos centrados únicamente en el estilo.",
+  "author": {
+    "name": "GALS"
+  },
+  "keywords": ["fact-check", "verificación", "comunicación", "Grupo Albión"]
+}
