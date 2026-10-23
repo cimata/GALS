@@ -1,0 +1,350 @@
+/* ============================================================
+   Infografías Grupo Albión — tokens y layout
+   Lienzo por defecto: diapositiva 16:9 de 1920 × 1080 px.
+   Variante vertical (1080 × 1728) con <body class="vertical">.
+   Importar tal cual. No redefinir tokens en la pieza.
+   ============================================================ */
+
+/* ---------- Fuentes ----------
+   preparar.py copia la carpeta fonts/ junto a este CSS.
+   Si no está, Manrope actúa de sustituta. ------------------- */
+@font-face{ font-family:"Metropolis"; font-weight:200; font-style:normal; src:url("fonts/Metropolis-extralight.otf") format("opentype"); font-display:block; }
+@font-face{ font-family:"Metropolis"; font-weight:300; font-style:normal; src:url("fonts/Metropolis-light.otf")      format("opentype"); font-display:block; }
+@font-face{ font-family:"Metropolis"; font-weight:400; font-style:normal; src:url("fonts/Metropolis-regular.otf")    format("opentype"); font-display:block; }
+@font-face{ font-family:"Metropolis"; font-weight:500; font-style:normal; src:url("fonts/Metropolis-medium.otf")     format("opentype"); font-display:block; }
+@font-face{ font-family:"Metropolis"; font-weight:600; font-style:normal; src:url("fonts/Metropolis-semibold.otf")   format("opentype"); font-display:block; }
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&family=Manrope:wght@200..800&display=swap");
+
+:root{
+  /* ---------- FONDO OSCURO ---------- */
+  --bg-dark:#0B3B39; --surface-dark:#0F4A47;
+  --ink-on-dark:#F6F4EF; --ink-on-dark-2:rgba(246,244,239,.72); --ink-on-dark-3:rgba(246,244,239,.48);
+  --hairline-dark:rgba(246,244,239,.14);
+
+  /* ---------- FONDO CLARO ---------- */
+  --bg-light:#F6F4EF; --surface-light:#FFFFFF;
+  --ink:#1D1D1D; --ink-2:#404040; --ink-3:#7E7E7E; --hairline-light:#E5E5E5;
+
+  /* ---------- ACENTOS ---------- */
+  --accent:#007879; --accent-2:#5EAAA4; --amber:#F7A700; --red:#CF092B;
+
+  /* ---------- ESCALA DE DATOS ---------- */
+  --data-1:#003F40; --data-2:#00595A; --data-3:#007879;
+  --data-4:#4A9A97; --data-5:#8FB3AE; --data-6:#C4D8D5;
+
+  /* ---------- TIPOGRAFÍA ---------- */
+  --font-sans:'Metropolis','Manrope',system-ui,-apple-system,sans-serif;
+  --font-italic:'Fraunces','Times New Roman',serif;
+
+  /* Escala fijada en px, no en vw: el lienzo tiene medida conocida y las
+     unidades relativas hacían que la misma pieza cambiara de cuerpo según
+     el ancho del render. */
+  --t-figure:132px;   /* la cifra gigante */
+  --t-hero:76px;      /* titular de portada */
+  --t-h2:44px;        /* titular de diapositiva */
+  --t-h3:26px;        /* titular de módulo */
+  --t-h4:19px;        /* subtítulo */
+  --t-body:16px; --t-small:14px;
+  --t-label:11px; --t-source:11px;
+  --w-extralight:200; --w-light:300; --w-regular:400; --w-medium:500; --w-semibold:600;
+
+  /* ---------- ESPACIADO ---------- */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px;
+  --s-7:48px; --s-8:64px; --s-9:96px; --s-10:128px;
+  --s-11:96px;                /* aire entre módulos dentro de una diapositiva */
+
+  --r-none:0; --r-pill:999px; --rule:1px;
+
+  /* ---------- LIENZO: diapositiva 16:9 ---------- */
+  --page-w:1920px; --page-h:1080px; --page-pad:88px;
+}
+
+/* Variante vertical: póster, redes, PDF impreso. */
+body.vertical{
+  --page-w:1080px; --page-h:1728px; --page-pad:96px;
+  --t-figure:150px; --t-hero:80px; --t-h2:48px; --t-h3:28px;
+  --s-11:160px;
+}
+
+/* Modo denso: más módulos por lienzo, menos aire. */
+body.denso{ --s-11:56px; }
+body.vertical.denso{ --s-11:96px; }
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:var(--font-sans);
+  font-size:var(--t-body); font-weight:var(--w-regular);
+  line-height:1.6; color:var(--ink);
+  background:#8f8f8f;                 /* solo visible en pantalla, entre láminas */
+  -webkit-font-smoothing:antialiased;
+}
+
+/* La lámina. Cada .pagina es una diapositiva y una hoja del PDF.
+   Alto fijo, no mínimo: así el desborde se detecta y el PPTX encaja exacto. */
+.pagina{
+  width:var(--page-w); height:var(--page-h);
+  margin:0 auto; padding:var(--page-pad);
+  background:var(--bg-light); color:var(--ink);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  break-after:page; page-break-after:always;
+}
+.pagina:last-child{ break-after:auto; page-break-after:auto; }
+.pagina.oscura{ background:var(--bg-dark); color:var(--ink-on-dark); }
+
+/* Estructura de la diapositiva: cabecera fija, lienzo de datos elástico, pie fijo. */
+.cabecera{ flex:0 0 auto; }
+.lienzo{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; justify-content:center; padding:var(--s-7) 0; }
+.pie-lamina{
+  flex:0 0 auto; display:flex; align-items:flex-end; justify-content:space-between;
+  gap:var(--s-7); border-top:var(--rule) solid var(--hairline-light); padding-top:var(--s-4);
+}
+.oscura .pie-lamina{ border-top-color:var(--hairline-dark); }
+.pie-lamina .logo{ height:26px; width:auto; margin:0; }
+
+/* ============================================================
+   TIPOGRAFÍA
+   ============================================================ */
+.etiqueta{
+  font-size:var(--t-label); font-weight:var(--w-semibold);
+  letter-spacing:.16em; text-transform:uppercase; line-height:1;
+  color:var(--accent); margin:0 0 var(--s-5);
+}
+.oscura .etiqueta{ color:var(--accent-2); }
+
+.hero{ font-size:var(--t-hero); font-weight:var(--w-extralight); letter-spacing:-.03em; line-height:1.02; margin:0; }
+.h2  { font-size:var(--t-h2);   font-weight:var(--w-extralight); letter-spacing:-.03em; line-height:1.05; margin:0; }
+.h3  { font-size:var(--t-h3);   font-weight:var(--w-light);      letter-spacing:-.02em; line-height:1.1; margin:0; }
+.h4  { font-size:var(--t-h4);   font-weight:var(--w-light);      letter-spacing:-.015em; line-height:1.2; margin:0; }
+
+/* Acento italic: una o dos palabras por titular, nunca más. */
+.it{ font-family:var(--font-italic); font-style:italic; font-weight:300; }
+
+.entradilla{ font-size:var(--t-h4); font-weight:var(--w-light); line-height:1.4; color:var(--ink-2); margin:var(--s-5) 0 0; max-width:64ch; }
+.oscura .entradilla{ color:var(--ink-on-dark-2); }
+
+/* Línea gris que explica qué se está midiendo. */
+.medida{ font-size:var(--t-small); color:var(--ink-3); margin:var(--s-3) 0 0; max-width:90ch; }
+.oscura .medida{ color:var(--ink-on-dark-3); }
+
+.cuerpo{ font-size:var(--t-body); color:var(--ink-2); margin:var(--s-4) 0 0; max-width:60ch; }
+.oscura .cuerpo{ color:var(--ink-on-dark-2); }
+
+.pequeno{ font-size:var(--t-small); color:var(--ink-2); line-height:1.45; }
+.oscura .pequeno{ color:var(--ink-on-dark-2); }
+
+/* Pie de fuente: cuerpo diminuto, a la derecha del pie de lámina. Nunca falta. */
+.fuente{
+  font-size:var(--t-source); letter-spacing:.04em; color:var(--ink-3);
+  text-align:right; margin:0;
+}
+.oscura .fuente{ color:var(--ink-on-dark-3); }
+
+/* ============================================================
+   MÓDULOS
+   ============================================================ */
+.modulo{ padding:0; }
+.modulo + .modulo{ border-top:var(--rule) solid var(--hairline-light); padding-top:var(--s-11); margin-top:var(--s-11); }
+.oscura .modulo + .modulo{ border-top-color:var(--hairline-dark); }
+
+.cols-2{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-9); align-items:start; }
+.cols-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s-8); align-items:start; }
+.cols-1-2{ display:grid; grid-template-columns:1fr 2fr; gap:var(--s-9); align-items:start; }
+.cols-2-1{ display:grid; grid-template-columns:2fr 1fr; gap:var(--s-9); align-items:start; }
+
+/* Filete vertical entre columnas: separa sin dibujar cajas. */
+.partido{ position:relative; }
+.partido > * + *{ border-left:var(--rule) solid var(--hairline-light); padding-left:var(--s-8); }
+.oscura .partido > * + *{ border-left-color:var(--hairline-dark); }
+
+/* ---------- Cifra gigante: una por lámina, siempre en ámbar ---------- */
+.cifra{
+  font-size:var(--t-figure); font-weight:var(--w-extralight);
+  letter-spacing:-.04em; line-height:.92; color:var(--amber);
+  margin:0; font-variant-numeric:lining-nums tabular-nums;
+}
+.cifra .unidad{ font-size:.38em; letter-spacing:-.02em; margin-left:.06em; }
+.cifra-pie{ font-size:var(--t-h4); font-weight:var(--w-light); color:var(--ink-2); margin:var(--s-4) 0 0; max-width:26ch; }
+.oscura .cifra-pie{ color:var(--ink-on-dark-2); }
+
+.cifra-2{ font-size:52px; font-weight:var(--w-extralight); letter-spacing:-.03em; line-height:1; color:var(--accent); margin:0; font-variant-numeric:lining-nums tabular-nums; }
+.oscura .cifra-2{ color:var(--accent-2); }
+.cifra-2.negativa{ color:var(--red); }
+
+/* ---------- Fila de estadísticas separadas por filete vertical ---------- */
+.stats{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:var(--s-8); }
+.stats > div{ padding-left:var(--s-6); border-left:var(--rule) solid var(--hairline-light); }
+.oscura .stats > div{ border-left-color:var(--hairline-dark); }
+.stats > div:first-child{ padding-left:0; border-left:0; }
+
+/* ---------- Tabla de datos: filetes, nunca cajas ---------- */
+.tabla{ width:100%; border-collapse:collapse; font-size:var(--t-small); }
+.tabla th{
+  text-align:left; font-size:var(--t-label); font-weight:var(--w-semibold);
+  letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3);
+  padding:0 var(--s-5) var(--s-3) 0; border-bottom:var(--rule) solid var(--hairline-light);
+}
+.tabla td{ padding:var(--s-4) var(--s-5) var(--s-4) 0; border-bottom:var(--rule) solid var(--hairline-light); color:var(--ink-2); }
+.tabla td.num, .tabla th.num{ text-align:right; font-variant-numeric:lining-nums tabular-nums; padding-right:0; }
+.tabla tr.destacada td{ color:var(--ink); }
+.tabla tr.destacada td.num{ color:var(--amber); }
+.oscura .tabla th, .oscura .tabla td{ border-bottom-color:var(--hairline-dark); }
+.oscura .tabla td{ color:var(--ink-on-dark-2); }
+
+/* ---------- Chips y leyendas: el único sitio con radio ---------- */
+.leyenda{ display:flex; flex-wrap:wrap; gap:var(--s-5); margin-top:var(--s-5); font-size:var(--t-small); color:var(--ink-3); }
+.leyenda span{ display:inline-flex; align-items:center; gap:var(--s-2); }
+.leyenda i{ width:10px; height:10px; border-radius:var(--r-pill); display:inline-block; }
+.chip{
+  display:inline-block; border-radius:var(--r-pill);
+  padding:var(--s-2) var(--s-4); font-size:var(--t-label);
+  font-weight:var(--w-semibold); letter-spacing:.16em; text-transform:uppercase;
+  border:var(--rule) solid var(--accent); color:var(--accent);
+}
+.oscura .chip{ border-color:var(--accent-2); color:var(--accent-2); }
+
+/* ---------- Barras horizontales en HTML ---------- */
+.barra{ display:grid; grid-template-columns:210px 1fr 110px; align-items:center; gap:var(--s-5); padding:var(--s-4) 0; border-bottom:var(--rule) solid var(--hairline-light); }
+.oscura .barra{ border-bottom-color:var(--hairline-dark); }
+.barra .etq{ font-size:var(--t-small); color:var(--ink-2); }
+.oscura .barra .etq{ color:var(--ink-on-dark-2); }
+.barra .pista{ height:20px; }
+.barra .valor{ height:20px; background:var(--data-3); display:block; }
+.barra .num{ text-align:right; font-size:var(--t-small); font-variant-numeric:lining-nums tabular-nums; color:var(--ink); }
+.oscura .barra .num{ color:var(--ink-on-dark); }
+.barra.destacada .valor{ background:var(--amber); }
+
+/* ---------- Hitos: secuencia de fechas sobre un eje horizontal ----------
+   El eje es un filete de 1 px y los hitos son puntos, no iconos. El orden
+   temporal ya lo cuenta la posición, así que el color no tiene que repetirlo:
+   todos los puntos van en teal y solo el hito que importa sale en ámbar. */
+.hitos{ position:relative; padding-top:var(--s-2); }
+.hitos::before{
+  content:""; position:absolute; left:0; right:0; top:0;
+  height:var(--rule); background:var(--hairline-light);
+}
+.oscura .hitos::before{ background:var(--hairline-dark); }
+.hitos-fila{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:var(--s-6); }
+.hito{ position:relative; padding-top:var(--s-6); }
+.hito::before{
+  content:""; position:absolute; top:-5px; left:0;
+  width:9px; height:9px; border-radius:var(--r-pill); background:var(--accent);
+}
+.hito.destacado::before{ background:var(--amber); width:13px; height:13px; top:-7px; }
+.hito.previsto::before{ background:var(--bg-light); border:var(--rule) solid var(--accent); }
+.oscura .hito.previsto::before{ background:var(--bg-dark); border-color:var(--accent-2); }
+.hito .fecha{
+  font-size:var(--t-label); font-weight:var(--w-semibold); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:var(--s-3);
+}
+.oscura .hito .fecha{ color:var(--ink-on-dark-3); }
+.hito.destacado .fecha{ color:var(--amber); }
+.hito .que{ font-size:var(--t-h4); font-weight:var(--w-light); color:var(--ink); margin:0 0 var(--s-2); line-height:1.15; }
+.oscura .hito .que{ color:var(--ink-on-dark); }
+.hito p{ margin:0; font-size:var(--t-small); color:var(--ink-2); line-height:1.35; }
+.oscura .hito p{ color:var(--ink-on-dark-2); }
+
+/* ---------- Cuadro de resultados: rejilla de cifras con su variación ---------- */
+.resultados{ display:grid; grid-template-columns:repeat(3,1fr); column-gap:var(--s-8); }
+.resultados.dos{ grid-template-columns:repeat(2,1fr); }
+.resultados.cuatro{ grid-template-columns:repeat(4,1fr); }
+.resultados > div{ padding:var(--s-6) 0; border-top:var(--rule) solid var(--hairline-light); }
+.oscura .resultados > div{ border-color:var(--hairline-dark); }
+.resultados .que{
+  font-size:var(--t-label); font-weight:var(--w-semibold); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 var(--s-4);
+}
+.oscura .resultados .que{ color:var(--ink-on-dark-3); }
+.resultados .valor{
+  font-size:46px; font-weight:var(--w-extralight); letter-spacing:-.03em; line-height:1;
+  color:var(--accent); margin:0; font-variant-numeric:lining-nums tabular-nums;
+}
+.oscura .resultados .valor{ color:var(--accent-2); }
+.resultados .protagonista .valor{ color:var(--amber); }
+.resultados .var{ font-size:var(--t-small); color:var(--ink-3); margin:var(--s-3) 0 0; }
+.oscura .resultados .var{ color:var(--ink-on-dark-3); }
+.resultados .var.baja{ color:var(--red); }
+
+/* ---------- Ficha de identidad: pares etiqueta / valor ---------- */
+.ficha{ margin:0; }
+.ficha > div{ display:grid; grid-template-columns:150px 1fr; gap:var(--s-5);
+  padding:var(--s-4) 0; border-bottom:var(--rule) solid var(--hairline-light); }
+.oscura .ficha > div{ border-bottom-color:var(--hairline-dark); }
+.ficha dt{
+  font-size:var(--t-label); font-weight:var(--w-semibold); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-3); line-height:1.6;
+}
+.oscura .ficha dt{ color:var(--ink-on-dark-3); }
+.ficha dd{ margin:0; font-size:var(--t-small); color:var(--ink-2); }
+.oscura .ficha dd{ color:var(--ink-on-dark-2); }
+
+/* ---------- Capas apiladas: procesos, fases o niveles de implantación ----------
+   Barras horizontales de ancho decreciente, una por capa, en escalón --data-1
+   a --data-6 (nunca en ámbar: el ámbar queda para la cifra protagonista). El
+   ancho de cada capa se fija a mano en --w y expresa orden, no una cifra: no
+   uses este módulo si las capas tienen un peso real medible, en ese caso son
+   barras del módulo D con su valor. --------------------------------------- */
+.capas{ display:flex; flex-direction:column; gap:2px; }
+.capa{
+  width:var(--w, 100%); display:grid; grid-template-columns:56px 1fr; align-items:center;
+  gap:var(--s-6); padding:var(--s-5) var(--s-6); color:var(--ink-on-dark);
+}
+.capa .num{
+  font-family:var(--font-sans); font-weight:var(--w-extralight); font-size:36px;
+  line-height:1; font-variant-numeric:lining-nums tabular-nums;
+}
+.capa h4{ font-size:var(--t-h4); font-weight:var(--w-regular); margin:0 0 2px; color:inherit; }
+.capa p{ font-size:var(--t-small); margin:0; color:inherit; opacity:.82; line-height:1.35; }
+
+/* ---------- Escala de intensidad: jerarquías cualitativas sin cifra ----------
+   Bloques de altura decreciente que ordenan niveles (obligatorio > recomendable
+   > opcional; alto > medio > bajo riesgo) sin fingir una proporción numérica
+   que no existe. La altura es ordinal, no un valor: no pongas números encima.
+   El primer bloque en --red solo si el nivel superior es de verdad una alarma
+   u obligación con riesgo de incumplimiento; si no, usa --data-1. ----------- */
+.espectro{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:var(--s-2); align-items:end; }
+.espectro .bloque{
+  height:var(--h, 120px); padding:var(--s-5) var(--s-5) var(--s-4); color:var(--ink-on-dark);
+  display:flex; flex-direction:column; justify-content:flex-end;
+}
+.espectro .etq{
+  font-size:var(--t-label); font-weight:var(--w-semibold); letter-spacing:.1em;
+  text-transform:uppercase; margin:0 0 var(--s-2); color:inherit;
+}
+.espectro p{ font-size:var(--t-small); margin:0; color:inherit; opacity:.88; line-height:1.35; }
+.espectro .bloque.alarma{ background:var(--red); }
+.espectro .bloque.medio{ background:var(--accent); }
+.espectro .bloque.bajo{ background:var(--data-2); }
+
+/* ---------- Portada y cierre ---------- */
+.portada{ justify-content:space-between; }
+.portada .meta{ font-size:var(--t-small); color:var(--ink-on-dark-3); letter-spacing:.04em; }
+.logo{ display:block; width:190px; height:auto; }
+.logo-centrado{ margin:var(--s-8) auto 0; }
+
+/* ---------- Filete de acento ---------- */
+.filete{ width:64px; height:var(--rule); background:var(--accent); border:0; margin:var(--s-6) 0; }
+.oscura .filete{ background:var(--accent-2); }
+
+/* ============================================================
+   SVG — clases de apoyo para los gráficos
+   ============================================================ */
+svg{ display:block; max-width:100%; height:auto; overflow:visible; }
+.svg-eje{ stroke:var(--hairline-light); stroke-width:1; }
+.oscura .svg-eje{ stroke:var(--hairline-dark); }
+.svg-etq{ font-family:var(--font-sans); font-size:12px; fill:var(--ink-3); }
+.oscura .svg-etq{ fill:var(--ink-on-dark-3); }
+.svg-val{ font-family:var(--font-sans); font-size:14px; fill:var(--ink); font-variant-numeric:tabular-nums; }
+.oscura .svg-val{ fill:var(--ink-on-dark); }
+
+/* ============================================================
+   IMPRESIÓN
+   ============================================================ */
+@media print{
+  body{ background:none; }
+  .pagina{ margin:0; }
+}

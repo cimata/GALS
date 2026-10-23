@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Prompt, skill y plugin</title>
+<link rel="stylesheet" href="infografia.css">
+<style>
+  .capa{ grid-template-columns:56px 1.15fr 1fr; }
+  .capa .como{ font-size:var(--t-small); line-height:1.4; border-left:1px solid rgba(255,255,255,.35); padding-left:var(--s-6); }
+  .capa .como b{ font-weight:inherit; font-family:var(--font-italic); font-style:italic; }
+  .tabla td, .tabla th{ vertical-align:top; }
+  .tabla td:first-child{ color:var(--ink); width:15%; }
+  .tabla td{ width:28%; }
+  .regla{ max-width:1500px; }
+  .regla .h2 + .h2{ margin-top:var(--s-6); }
+</style>
+</head>
+<body>
+
+<!-- ============ LÁMINA 1 · QUÉ ES CADA COSA Y CÓMO SE INVOCA ============ -->
+<section class="pagina">
+  <header class="cabecera">
+    <p class="etiqueta">CHATGPT ENTERPRISE · GUÍA RÁPIDA</p>
+    <h2 class="h2">Prompt, skill y plugin, <span class="it">de un vistazo</span></h2>
+    <p class="medida">Cada nivel contiene al anterior. Un plugin puede llevar skills dentro, y una skill es, en el fondo, un prompt guardado para reutilizarlo.</p>
+  </header>
+
+  <div class="lienzo">
+    <div class="capas">
+      <div class="capa" style="--w:100%; background:var(--data-1)">
+        <span class="num">03</span>
+        <div><h4>Plugin (complemento)</h4><p>Paquete instalable que reúne skills y conexiones con otras herramientas. Permite a ChatGPT leer datos o actuar en servicios externos.</p></div>
+        <p class="como">Se instala desde <b>Plugins</b> en la barra lateral, si el administrador lo ha habilitado. Después, <b>@nombre</b>, el botón <b>+</b> o ChatGPT lo usa solo cuando viene al caso.</p>
+      </div>
+      <div class="capa" style="--w:88%; background:var(--data-2)">
+        <span class="num">02</span>
+        <div><h4>Skill (habilidad)</h4><p>Instrucciones guardadas para una tarea concreta, con sus pasos, criterios y archivos de apoyo. Se crea una vez y se reutiliza o se comparte con el equipo.</p></div>
+        <p class="como">Escribe <b>@</b> en el cuadro de mensaje y elige la skill. ChatGPT también puede activarla solo si la petición encaja con su descripción.</p>
+      </div>
+      <div class="capa" style="--w:76%; background:var(--data-3)">
+        <span class="num">01</span>
+        <div><h4>Prompt (instrucción)</h4><p>Lo que escribes en el chat en cada momento. Sirve para esa conversación y no se guarda como herramienta.</p></div>
+        <p class="como">Se escribe directamente en el cuadro de mensaje. No requiere configuración.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="pie-lamina">
+    <img class="logo" src="assets/logo-grupo-albion-dark.png" alt="Grupo Albión">
+    <p class="fuente">Fuente: OpenAI Help Center, «Skills in ChatGPT» y «Plugins in ChatGPT». Consultado el 23/10/2026. Los menús pueden variar según plan, rol y configuración del espacio de trabajo.</p>
+  </div>
+</section>
+
+<!-- ============ LÁMINA 2 · CUÁNDO USAR QUÉ ============ -->
+<section class="pagina">
+  <header class="cabecera">
+    <p class="etiqueta">CUÁNDO USAR QUÉ</p>
+    <h2 class="h2">Elige según si la tarea <span class="it">se repite</span> o necesita otras herramientas</h2>
+    <p class="medida">Comparación de los tres recursos por uso, duración, autoría e invocación.</p>
+  </header>
+
+  <div class="lienzo">
+    <table class="tabla">
+      <thead><tr><th></th><th>Prompt</th><th>Skill</th><th>Plugin</th></tr></thead>
+      <tbody>
+        <tr><td>Úsalo cuando</td><td>La tarea es puntual o la estás probando por primera vez.</td><td>Repites la misma tarea con las mismas reglas.</td><td>La tarea necesita datos o acciones de otra aplicación.</td></tr>
+        <tr><td>Ejemplo</td><td>«Resume este comunicado en tres frases.»</td><td>Traducir notas de prensa al inglés británico con el glosario y el estilo de la casa.</td><td>Buscar un informe en el gestor documental de la empresa y redactar su resumen.</td></tr>
+        <tr><td>Cómo se invoca</td><td>Escribiéndolo en el chat.</td><td>@nombre de la skill, o de forma automática.</td><td>@nombre del plugin, botón +, o de forma automática.</td></tr>
+        <tr><td>Cuánto dura</td><td>Lo que dura la conversación.</td><td>Queda guardada hasta que se borra.</td><td>Queda instalado hasta que se desinstala.</td></tr>
+        <tr><td>Quién lo crea</td><td>Cualquier usuario.</td><td>Cualquier usuario con permiso. Se comparte o publica en el espacio de trabajo.</td><td>OpenAI, un proveedor o la empresa. Lo habilita el administrador.</td></tr>
+        <tr><td>Qué necesita</td><td>Nada.</td><td>Unas instrucciones claras y, si hace falta, archivos de referencia.</td><td>Autorizar la cuenta del servicio externo, si lo usa.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pie-lamina">
+    <img class="logo" src="assets/logo-grupo-albion-dark.png" alt="Grupo Albión">
+    <p class="fuente">Fuente: OpenAI Help Center, «Skills in ChatGPT» y «Plugins in ChatGPT». Consultado el 23/10/2026. Ejemplos ilustrativos.</p>
+  </div>
+</section>
+
+<!-- ============ LÁMINA 3 · REGLA PRÁCTICA ============ -->
+<section class="pagina oscura">
+  <header class="cabecera">
+    <p class="etiqueta">REGLA PRÁCTICA</p>
+  </header>
+
+  <div class="lienzo">
+    <div class="regla">
+      <h2 class="h2">Si escribes el mismo prompt por tercera vez, <span class="it">conviértelo en skill</span>.</h2>
+      <h2 class="h2">Si la tarea necesita datos de otra herramienta, <span class="it">busca un plugin</span>.</h2>
+      <hr class="filete">
+      <p class="cuerpo">Cuando una skill sea importante para el resultado, invócala con @ en lugar de confiar en que ChatGPT la elija solo. Si no encuentras un plugin, pide al administrador del espacio de trabajo que lo habilite.</p>
+    </div>
+  </div>
+
+  <div class="pie-lamina">
+    <img class="logo" src="assets/logo-grupo-albion-white.png" alt="Grupo Albión">
+    <p class="fuente">Fuente: OpenAI Help Center, «Skills in ChatGPT» y «Plugins in ChatGPT». Consultado el 23/10/2026.</p>
+  </div>
+</section>
+
+</body>
+</html>
